@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id          String       @id @default(cuid())
+  supabaseId  String       @unique
+  name        String
+  email       String       @unique
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  programs    Program[]
+  workoutLogs WorkoutLog[]
+  @@map("users")
+}
+
+model Program {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  csvUrl      String?
+  isActive    Boolean    @default(false)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises   Exercise[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  @@map("programs")
+}
+
+model Exercise {
+  id          String       @id @default(cuid())
+  name        String
+  muscleGroup String
+  day         String
+  order       Int
+  defaultSets Int          @default(3)
+  defaultReps String       @default("10-12")
+  notes       String?
+  mediaUrl    String?
+  programId   String
+  program     Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  workoutLogs WorkoutLog[]
+  createdAt   DateTime     @default(now())
+  @@index([programId, day])
+  @@map("exercises")
+}
+
+model WorkoutLog {
+  id         String   @id @default(cuid())
+  weight     Float
+  sets       Int
+  reps       Int
+  notes      String?
+  loggedAt   DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  @@index([userId, exerciseId, loggedAt(sort: Desc)])
+  @@map("workout_logs")
+}
