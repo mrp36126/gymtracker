@@ -13,26 +13,31 @@ export default function RegisterPage() {
   const [loading, setLoading]   = useState(false);
 
   const handleRegister = async () => {
-    setError(''); setLoading(true);
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? 'Registration failed');
-
-      // Auto sign in after register
-      const supabase = createSupabaseBrowserClient();
-      await supabase.auth.signInWithPassword({ email, password });
-      router.push('/welcome');
-      router.refresh();
-    } catch (e: any) {
-      setError(e.message);
-      setLoading(false);
+  setError(''); setLoading(true);
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      // Handle Zod array errors or plain string errors
+      const msg = Array.isArray(json.error)
+        ? json.error.map((e: any) => e.message).join(', ')
+        : json.error ?? 'Registration failed';
+      throw new Error(msg);
     }
-  };
+
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signInWithPassword({ email, password });
+    router.push('/welcome');
+    router.refresh();
+  } catch (e: any) {
+    setError(e.message);
+    setLoading(false);
+  }
+};
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
