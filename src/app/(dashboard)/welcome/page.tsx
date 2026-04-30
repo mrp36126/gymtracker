@@ -24,9 +24,9 @@ export default async function WelcomePage() {
 
   let activeProgram = null;
   try {
-    activeProgram = await prisma.program.findFirst({
-      where: { userId: user.id, isActive: true },
-    });
+activeProgram = await prisma.program.findFirst({
+  where: { isActive: true },
+});
   } catch (err) {
     // Non-fatal — continue without active program
   }
