@@ -11,18 +11,20 @@ export default function LoginPage() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
-  const handleLogin = async () => {
-    setError(''); setLoading(true);
+ const handleLogin = async () => {
+  setError(''); setLoading(true);
+  try {
     const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      router.push('/welcome');
-      router.refresh();
-    }
-  };
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+    if (!data.session) throw new Error('No session returned');
+    router.push('/welcome');
+    router.refresh();
+  } catch (e: any) {
+    setError(e.message);
+    setLoading(false);
+  }
+};
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
