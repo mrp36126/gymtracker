@@ -1,4 +1,3 @@
-// src/app/(dashboard)/welcome/page.tsx
 import { getAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getTodayName } from '@/lib/day-resolver';
@@ -6,12 +5,31 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 export default async function WelcomePage() {
-  const user = await getAuthUser();
+  let user;
+  try {
+    user = await getAuthUser();
+  } catch (err: any) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-8">
+        <div className="bg-red-50 rounded-2xl p-6 max-w-lg">
+          <h2 className="font-bold text-red-700 mb-2">Database connection error</h2>
+          <p className="text-red-600 text-sm">{err.message}</p>
+          <p className="text-gray-500 text-xs mt-2">Check your DATABASE_URL in Vercel environment variables.</p>
+        </div>
+      </main>
+    );
+  }
+
   if (!user) redirect('/login');
 
-  const activeProgram = await prisma.program.findFirst({
-    where: { userId: user.id, isActive: true },
-  });
+  let activeProgram = null;
+  try {
+    activeProgram = await prisma.program.findFirst({
+      where: { userId: user.id, isActive: true },
+    });
+  } catch (err) {
+    // Non-fatal — continue without active program
+  }
 
   const todayName = getTodayName();
 
