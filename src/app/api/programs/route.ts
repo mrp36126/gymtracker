@@ -21,6 +21,10 @@ export async function POST(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
 
+  if (!user!.isAdmin) {
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  }
+
   const formData = await req.formData();
   const file = formData.get('file') as File | null;
   const name = formData.get('name') as string | null;
@@ -33,7 +37,6 @@ export async function POST(req: NextRequest) {
   }
 
   const csvText = await file.text();
-
   let parsed;
   try {
     parsed = parseProgramCsv(csvText);
@@ -42,7 +45,7 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const filePath = `programs/${user!.id}/${Date.now()}.csv`;
+  const filePath = `programs/${Date.now()}.csv`;
   await supabase.storage.from('gymtracker').upload(filePath, file, { upsert: true });
   const { data: urlData } = supabase.storage.from('gymtracker').getPublicUrl(filePath);
 
