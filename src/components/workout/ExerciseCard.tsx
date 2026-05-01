@@ -20,23 +20,37 @@ export default function ExerciseCard({ exercise }: Props) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4">
       {/* Media */}
-      <div className="relative h-40 bg-indigo-50">
-        {exercise.mediaUrl ? (
-          exercise.mediaUrl.endsWith('.mp4') ? (
-            <video src={exercise.mediaUrl} className="w-full h-full object-cover" controls muted loop />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={exercise.mediaUrl} alt={exercise.name}
-              className="w-full h-full object-cover" />
-          )
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src="/placeholder-exercise.jpg" alt="Exercise placeholder"
-            className="w-full h-full object-cover opacity-60" />
-        )}
-        <span className="absolute top-2 right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">
-          {exercise.muscleGroup}
-        </span>
+<div className="relative h-56 bg-gray-100 overflow-hidden rounded-t-2xl">
+  {exercise.mediaUrl ? (
+    exercise.mediaUrl.endsWith('.mp4') || exercise.mediaUrl.endsWith('.mov') ? (
+      <video
+        src={exercise.mediaUrl}
+        className="w-full h-full object-cover object-center"
+        controls
+        muted
+        loop
+        playsInline
+      />
+    ) : (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={exercise.mediaUrl}
+        alt={exercise.name}
+        className="w-full h-full object-contain object-center bg-gray-100"
+      />
+    )
+  ) : (
+    <div className="w-full h-full flex items-center justify-center bg-indigo-50">
+      <div className="text-center">
+        <p className="text-4xl mb-1">🏋️</p>
+        <p className="text-xs text-gray-400">No image yet</p>
+      </div>
+    </div>
+  )}
+  <span className="absolute top-2 right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">
+    {exercise.muscleGroup}
+  </span>
+</div>
       </div>
 
       <div className="p-4">
