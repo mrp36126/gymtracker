@@ -2,14 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { user, response } = await requireAuth();
   if (response) return response;
+  if (!user!.isAdmin) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
 
   const { id } = await params;
 
-  await prisma.program.updateMany({ where: { userId: user!.id }, data: { isActive: false } });
-  await prisma.program.update({ where: { id }, data: { isActive: true } });
+  await prisma.program.updateMany({
+    where: { userId: user!.id },
+    data: { isActive: false },
+  });
 
-  return NextResponse.redirect(new URL('/program', req.url));
+  await prisma.program.update({
+    where: { id },
+    data: { isActive: true },
+  });
+
+  return NextResponse.json({ success: true });
 }
