@@ -65,7 +65,7 @@ activeProgram = await prisma.program.findFirst({
             <p className="text-2xl font-bold text-indigo-700">View Charts →</p>
           </Link>
           {user.isAdmin && (
-  <Link href="/admin/media"
+  <Link href="/admin"
     className="block bg-white border border-indigo-200 rounded-2xl p-6 hover:shadow-md transition md:col-span-2">
     <p className="text-sm uppercase tracking-wider text-gray-400 mb-1">Admin</p>
     <p className="text-2xl font-bold text-indigo-700">Manage Exercise Media →</p>
