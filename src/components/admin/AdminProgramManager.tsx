@@ -31,7 +31,6 @@ export default function AdminProgramManager({ programs: initial }: Props) {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  // Upload new program
   const handleUpload = async () => {
     if (!selectedFile || !newName.trim()) {
       setError('Please enter a program name and select a CSV file');
@@ -57,7 +56,6 @@ export default function AdminProgramManager({ programs: initial }: Props) {
     }
   };
 
-  // Rename program
   const handleRename = async (id: string) => {
     if (!editName.trim()) return;
     setError('');
@@ -77,7 +75,6 @@ export default function AdminProgramManager({ programs: initial }: Props) {
     }
   };
 
-  // Activate program
   const handleActivate = async (id: string) => {
     setActivating(id);
     setError('');
@@ -93,9 +90,8 @@ export default function AdminProgramManager({ programs: initial }: Props) {
     }
   };
 
-  // Delete program
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete "${name}"? This will remove all exercises in this program. This cannot be undone.`)) return;
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     setDeleting(id);
     setError('');
     try {
@@ -113,7 +109,6 @@ export default function AdminProgramManager({ programs: initial }: Props) {
   return (
     <div className="space-y-6">
 
-      {/* Feedback */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-sm whitespace-pre-wrap">
           {error}
@@ -121,7 +116,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
       )}
       {success && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm">
-          ✅ {success}
+          {success}
         </div>
       )}
 
@@ -146,10 +141,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
             {selectedFile ? (
               <p className="text-indigo-600 font-medium">{selectedFile.name}</p>
             ) : (
-              <div>
-                <p className="text-2xl mb-1">📄</p>
-                <p className="text-sm">Click to select a CSV file</p>
-              </div>
+              <p className="text-sm">Click to select a CSV file</p>
             )}
             <input
               ref={fileRef}
@@ -164,7 +156,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
             disabled={uploading}
             className="w-full bg-indigo-600 text-white rounded-xl py-2.5 font-medium
               hover:bg-indigo-700 disabled:opacity-50 transition">
-            {uploading ? 'Uploading & parsing…' : 'Upload Program'}
+            {uploading ? 'Uploading & parsing...' : 'Upload Program'}
           </button>
         </div>
       </div>
@@ -173,20 +165,22 @@ export default function AdminProgramManager({ programs: initial }: Props) {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-indigo-600 px-5 py-3 flex items-center justify-between">
           <h2 className="text-white font-bold">Existing Programs</h2>
-          <span className="text-indigo-200 text-sm">{programs.length} program{programs.length !== 1 ? 's' : ''}</span>
+          <span className="text-indigo-200 text-sm">
+            {programs.length} program{programs.length !== 1 ? 's' : ''}
+          </span>
         </div>
 
         {programs.length === 0 ? (
           <div className="p-8 text-center text-gray-400">
-            <p className="text-3xl mb-2">📭</p>
             <p>No programs yet. Upload your first CSV above.</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
             {programs.map(program => (
               <div key={program.id} className="p-5">
-                {/* Program header */}
-                <div className="flex items-start justify-between gap-3">
+
+                {/* Name row */}
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex-1 min-w-0">
                     {editingId === program.id ? (
                       <div className="flex gap-2">
@@ -215,7 +209,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
                         <p className="font-bold text-gray-800">{program.name}</p>
                         {program.isActive && (
                           <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                            ✅ Active
+                            Active
                           </span>
                         )}
                       </div>
@@ -227,14 +221,14 @@ export default function AdminProgramManager({ programs: initial }: Props) {
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="flex flex-wrap gap-2">
                   {!program.isActive && (
                     <button
                       onClick={() => handleActivate(program.id)}
                       disabled={activating === program.id}
                       className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg
                         hover:bg-green-700 disabled:opacity-50 transition">
-                      {activating === program.id ? 'Activating…' : '✅ Set Active'}
+                      {activating === program.id ? 'Activating...' : 'Set Active'}
                     </button>
                   )}
 
@@ -242,21 +236,21 @@ export default function AdminProgramManager({ programs: initial }: Props) {
                     onClick={() => { setEditingId(program.id); setEditName(program.name); }}
                     className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg
                       hover:bg-indigo-100 transition">
-                    ✏️ Rename
+                    Rename
                   </button>
 
                   
                     href={`/program/${program.id}`}
                     className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg
                       hover:bg-gray-100 transition">
-                    👁 View Exercises
+                    View Exercises
                   </a>
 
                   
-                    href={`/admin/media`}
+                    href="/admin/media"
                     className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg
                       hover:bg-gray-100 transition">
-                    🎬 Manage Media
+                    Manage Media
                   </a>
 
                   {!program.isActive && (
@@ -265,7 +259,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
                       disabled={deleting === program.id}
                       className="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg
                         hover:bg-red-100 disabled:opacity-50 transition ml-auto">
-                      {deleting === program.id ? 'Deleting…' : '🗑 Delete'}
+                      {deleting === program.id ? 'Deleting...' : 'Delete'}
                     </button>
                   )}
                 </div>
