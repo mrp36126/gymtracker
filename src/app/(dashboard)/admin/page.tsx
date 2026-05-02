@@ -25,19 +25,16 @@ export default async function AdminPage() {
           <Link href="/welcome" className="text-sm text-indigo-600 hover:underline">← Home</Link>
         </div>
 
-        {/* Quick links */}
         <div className="grid grid-cols-2 gap-4 mb-8">
           <Link href="/admin/media"
             className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition">
-            <p className="text-2xl mb-1">🎬</p>
             <p className="font-bold text-gray-800">Exercise Media</p>
-            <p className="text-xs text-gray-400 mt-1">Upload images & videos</p>
+            <p className="text-xs text-gray-400 mt-1">Upload images and videos</p>
           </Link>
           <Link href="/program"
             className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition">
-            <p className="text-2xl mb-1">📋</p>
             <p className="font-bold text-gray-800">View Programs</p>
-            <p className="text-xs text-gray-400 mt-1">See user-facing program view</p>
+            <p className="text-xs text-gray-400 mt-1">User-facing program view</p>
           </Link>
         </div>
 
