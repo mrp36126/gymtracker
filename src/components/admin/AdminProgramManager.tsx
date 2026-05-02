@@ -247,7 +247,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
 
       {/* Supplementary Programs */}
       <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
-        <div className="bg-purple-600 px-5 py-3 flex items-center justify-between">
+        <div className="bg-purple-600/20 border-b border-purple-500/20 px-5 py-3 flex items-center justify-between">
           <h2 className="text-white font-bold">Supplementary Programs</h2>
           <span className="text-purple-200 text-sm">{supplementaryPrograms.length} program{supplementaryPrograms.length !== 1 ? 's' : ''}</span>
         </div>
