@@ -1,28 +1,27 @@
-// src/app/(dashboard)/workout/[day]/page.tsx
 import { getAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import ExerciseCard from '@/components/workout/ExerciseCard';
 import type { Exercise } from '@/types';
-
-interface Props { params: { day: string } }
+import Link from 'next/link';
 
 export default async function WorkoutDayPage({ params }: { params: Promise<{ day: string }> }) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
 
-    const { day: rawDay } = await params;
+  const { day: rawDay } = await params;
   const day = rawDay.charAt(0).toUpperCase() + rawDay.slice(1);
 
-  const program = await prisma.program.findFirst({
-    where: { userId: user.id, isActive: true },
-  });
+  const program = await prisma.program.findFirst({ where: { isActive: true, programType: 'primary' } });
 
   if (!program) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-gray-500">No active program. Please upload one first.</p>
-      </div>
+      <main className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-white/40">No active program found.</p>
+          <Link href="/welcome" className="text-indigo-400 text-sm mt-2 inline-block">← Home</Link>
+        </div>
+      </main>
     );
   }
 
@@ -37,25 +36,53 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
         where: { exerciseId: ex.id, userId: user.id },
         orderBy: { loggedAt: 'desc' },
       });
-      return { ...ex, defaultReps: ex.defaultReps, lastLog: lastLog ?? null } as Exercise;
+      return { ...ex, lastLog: lastLog ?? null } as Exercise;
     })
   );
 
   if (exercisesWithLogs.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-gray-500">No exercises scheduled for {day}. Enjoy your rest day! 🎉</p>
-      </div>
+      <main className="min-h-screen bg-[#0A0A0F] p-6">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <Link href="/welcome" className="text-white/40 hover:text-white/70 transition text-sm">← Home</Link>
+          </div>
+          <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-10 text-center">
+            <p className="text-3xl mb-3">🎉</p>
+            <p className="text-white font-bold text-lg">Rest Day</p>
+            <p className="text-white/40 text-sm mt-1">No exercises scheduled for {day}.</p>
+          </div>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-indigo-700 mb-1">{day} Workout</h1>
-      <p className="text-gray-400 text-sm mb-6">{program.name}</p>
-      {exercisesWithLogs.map(ex => (
-        <ExerciseCard key={ex.id} exercise={ex} />
-      ))}
-    </div>
+    <main className="min-h-screen bg-[#0A0A0F] pb-10">
+
+      {/* Header */}
+      <div className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
+        <Link href="/welcome" className="text-white/40 hover:text-white/70 transition text-sm">← Home</Link>
+        <div className="text-center">
+          <p className="text-xs font-semibold text-white/30 uppercase tracking-widest">{program.name}</p>
+          <p className="text-sm font-bold text-white">{day} Workout</p>
+        </div>
+        <div className="text-xs text-white/30">{exercisesWithLogs.length} exercises</div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 pt-5">
+        {exercisesWithLogs.map((ex, i) => (
+          <div key={ex.id}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+                {i + 1}
+              </div>
+              <div className="h-px flex-1 bg-white/[0.05]"></div>
+            </div>
+            <ExerciseCard exercise={ex} />
+          </div>
+        ))}
+      </div>
+    </main>
   );
 }
