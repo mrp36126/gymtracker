@@ -221,7 +221,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
         </div>
 
         {primaryPrograms.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
+          <div className="p-8 text-center text-white/30">
             <p>No primary programs yet.</p>
           </div>
         ) : (
@@ -253,7 +253,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
         </div>
 
         {supplementaryPrograms.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
+          <div className="p-8 text-center text-white/30">
             <p>No supplementary programs yet. Upload a Hyrox or conditioning program above.</p>
           </div>
         ) : (
