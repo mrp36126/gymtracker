@@ -319,7 +319,7 @@ function ProgramRow({
               </button>
               <button
                 onClick={() => setEditingId(null)}
-                className="bg-gray-100 text-gray-600 text-xs px-3 py-1.5 rounded-lg hover:bg-gray-200 transition">
+                className="bg-white/[0.06] text-white/40 text-xs px-3 py-1.5 rounded-lg hover:bg-gray-200 transition">
                 Cancel
               </button>
             </div>
