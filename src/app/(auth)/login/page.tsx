@@ -11,56 +11,76 @@ export default function LoginPage() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
- const handleLogin = async () => {
-  setError(''); setLoading(true);
-  try {
-    const supabase = createSupabaseBrowserClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error(error.message);
-    if (!data.session) throw new Error('No session returned');
-    router.push('/welcome');
-    router.refresh();
-  } catch (e: any) {
-    setError(e.message);
-    setLoading(false);
-  }
-};
+  const handleLogin = async () => {
+    setError(''); setLoading(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error(error.message);
+      if (!data.session) throw new Error('No session returned');
+      router.push('/welcome');
+      router.refresh();
+    } catch (e: any) {
+      setError(e.message);
+      setLoading(false);
+    }
+  };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-indigo-700 mb-1">Welcome back</h1>
-        <p className="text-gray-400 text-sm mb-6">Sign in to GymTracker Pro</p>
+    <main className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6">
+      <div className="w-full max-w-sm">
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm
-                focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 mb-6">
+            <div className="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>
+            <span className="font-bold text-white tracking-tight">GymTracker Pro</span>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm
-                focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-          </div>
-
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-
-          <button onClick={handleLogin} disabled={loading}
-            className="w-full bg-indigo-600 text-white rounded-xl py-2.5 font-medium
-              hover:bg-indigo-700 disabled:opacity-50 transition">
-            {loading ? 'Signing in…' : 'Sign In'}
-          </button>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Welcome back</h1>
+          <p className="text-white/40 text-sm mt-2">Sign in to continue your journey</p>
         </div>
 
-        <p className="text-center text-sm text-gray-400 mt-6">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-indigo-600 font-medium hover:underline">
-            Register
+        {/* Form */}
+        <div className="space-y-3 mb-4">
+          <div>
+            <label className="block text-xs font-semibold text-white/40 uppercase tracking-widest mb-2">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.08] transition"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-white/40 uppercase tracking-widest mb-2">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.08] transition"
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl py-3.5 font-bold text-sm tracking-wide transition disabled:opacity-50 mb-6">
+          {loading ? 'Signing in...' : 'Sign In'}
+        </button>
+
+        <p className="text-center text-sm text-white/30">
+          No account?{' '}
+          <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold transition">
+            Create one
           </Link>
         </p>
       </div>
