@@ -13,53 +13,58 @@ export default async function ProgramPage() {
   });
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-indigo-700">Gym Programs</h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {user.isAdmin ? 'Admin — manage all programs' : 'Your current workout program'}
-            </p>
-          </div>
-          <Link href="/welcome" className="text-sm text-indigo-600 hover:underline">← Back</Link>
-        </div>
+    <main className="min-h-screen bg-[#0A0A0F] pb-10">
 
-        {/* Only admin sees the uploader */}
+      {/* Header */}
+      <div className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
+        <Link href="/welcome" className="text-white/40 hover:text-white/70 transition text-sm">← Home</Link>
+        <p className="text-sm font-bold text-white">Programs</p>
+        <div className="w-10"></div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-5 pt-6">
+
         {user.isAdmin && (
-          <div className="mb-8">
+          <div className="mb-6">
+            <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-3">Upload New Program</p>
             <CsvUploader />
           </div>
         )}
 
+        <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-3">All Programs</p>
+
         {programs.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
-            <p className="text-gray-400">No programs loaded yet.</p>
-            {user.isAdmin && <p className="text-sm text-gray-300 mt-1">Upload a CSV above to get started.</p>}
+          <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-10 text-center">
+            <p className="text-white/40 text-sm">No programs yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {programs.map(program => (
-              <div key={program.id}
-                className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+              <div key={program.id} className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-gray-800">{program.name}</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {program.isActive ? '✅ Active' : 'Inactive'} · Added {new Date(program.createdAt).toLocaleDateString()}
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-bold text-white text-sm">{program.name}</p>
+                    {program.isActive && (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-white/30 uppercase tracking-widest">
+                    Added {new Date(program.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  {/* Only admin can activate/delete */}
                   {user.isAdmin && !program.isActive && (
-                    <form action={`/api/programs/${program.id}/activate`} method="POST">
+                    <form action={'/api/programs/' + program.id + '/activate'} method="POST">
                       <button type="submit"
-                        className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition">
-                        Set Active
+                        className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-xl hover:bg-indigo-500 transition font-semibold">
+                        Activate
                       </button>
                     </form>
                   )}
-                  <Link href={`/program/${program.id}`}
-                    className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition text-gray-600">
+                  <Link href={'/program/' + program.id}
+                    className="text-xs bg-white/[0.06] text-white/60 px-3 py-1.5 rounded-xl hover:bg-white/10 hover:text-white transition font-semibold border border-white/[0.08]">
                     View
                   </Link>
                 </div>
