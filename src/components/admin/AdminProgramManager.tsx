@@ -161,7 +161,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
           />
 
           <div className="flex gap-3">
-            <label className={'flex-1 cursor-pointer rounded-xl border-2 p-3 text-center text-sm font-medium transition ' + (programType === 'primary' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-400 hover:border-gray-300')}>
+            <label className={'flex-1 cursor-pointer rounded-xl border-2 p-3 text-center text-sm font-medium transition ' + (programType === 'primary' ? 'border-indigo-600 bg-indigo-500/10 text-indigo-400' : 'border-gray-200 text-gray-400 hover:border-gray-300')}>
               <input
                 type="radio"
                 name="programType"
@@ -173,7 +173,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
               Primary Program
               <p className="text-xs font-normal mt-0.5 opacity-70">Daily workout, day-based</p>
             </label>
-            <label className={'flex-1 cursor-pointer rounded-xl border-2 p-3 text-center text-sm font-medium transition ' + (programType === 'supplementary' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-400 hover:border-gray-300')}>
+            <label className={'flex-1 cursor-pointer rounded-xl border-2 p-3 text-center text-sm font-medium transition ' + (programType === 'supplementary' ? 'border-indigo-600 bg-indigo-500/10 text-indigo-400' : 'border-gray-200 text-gray-400 hover:border-gray-300')}>
               <input
                 type="radio"
                 name="programType"
@@ -354,7 +354,7 @@ function ProgramRow({
 
         <button
           onClick={() => { setEditingId(program.id); setEditName(program.name); }}
-          className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">
+          className="text-xs bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">
           Rename
         </button>
 
