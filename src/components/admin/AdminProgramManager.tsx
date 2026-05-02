@@ -381,7 +381,7 @@ function ProgramRow({
       </div>
 
       {program.isActive && (
-        <p className="text-xs text-gray-300 mt-2">
+        <p className="text-[10px] text-white/20 mt-2">
           Active programs cannot be deleted. Set another program active first.
         </p>
       )}
