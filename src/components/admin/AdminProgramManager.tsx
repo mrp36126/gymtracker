@@ -240,16 +240,19 @@ export default function AdminProgramManager({ programs: initial }: Props) {
                   </button>
 
                   
-                      href={'/program/' + program.id}
-  className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">
-  View Exercises
-</a>
+                    href={'/program/' + program.id}
+                    className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg
+                      hover:bg-gray-100 transition">
+                    View Exercises
+                  </a>
 
                   
-  href="/admin/media"
-  className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">
-  Manage Media
-</a>
+                    href="/admin/media"
+                    className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg
+                      hover:bg-gray-100 transition">
+                    Manage Media
+                  </a>
+
                   {!program.isActive && (
                     <button
                       onClick={() => handleDelete(program.id, program.name)}
