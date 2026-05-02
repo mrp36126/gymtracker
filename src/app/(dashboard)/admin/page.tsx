@@ -15,26 +15,32 @@ export default async function AdminPage() {
   });
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-indigo-700">Admin Panel</h1>
-            <p className="text-gray-400 text-sm mt-1">Manage programs, exercises and media</p>
-          </div>
-          <Link href="/welcome" className="text-sm text-indigo-600 hover:underline">← Home</Link>
-        </div>
+    <main className="min-h-screen bg-[#0A0A0F] pb-10">
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <Link href="/admin/media"
-            className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition">
-            <p className="font-bold text-gray-800">Exercise Media</p>
-            <p className="text-xs text-gray-400 mt-1">Upload images and videos</p>
+      {/* Header */}
+      <div className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
+        <Link href="/welcome" className="text-white/40 hover:text-white/70 transition text-sm">← Home</Link>
+        <p className="text-sm font-bold text-white">Admin Panel</p>
+        <div className="w-10"></div>
+      </div>
+
+      <div className="max-w-2xl mx-auto px-5 pt-6">
+
+        {/* Quick links */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <Link href="/admin/media" className="block">
+            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+              <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Media</p>
+              <p className="text-base font-bold text-white">Exercise Images</p>
+              <p className="text-xs text-white/30 mt-1">Upload images and videos</p>
+            </div>
           </Link>
-          <Link href="/program"
-            className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition">
-            <p className="font-bold text-gray-800">View Programs</p>
-            <p className="text-xs text-gray-400 mt-1">User-facing program view</p>
+          <Link href="/program" className="block">
+            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+              <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Programs</p>
+              <p className="text-base font-bold text-white">View Plan</p>
+              <p className="text-xs text-white/30 mt-1">User-facing program view</p>
+            </div>
           </Link>
         </div>
 
