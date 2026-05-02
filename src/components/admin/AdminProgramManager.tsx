@@ -309,7 +309,7 @@ function ProgramRow({
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && onRename(program.id)}
-                className="flex-1 border border-indigo-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="flex-1 bg-white/[0.06] border border-indigo-500/40 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
                 autoFocus
               />
               <button
