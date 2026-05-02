@@ -225,7 +225,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
             <p>No primary programs yet.</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-white/[0.04]">
             {primaryPrograms.map(program => (
               <ProgramRow
                 key={program.id}
@@ -257,7 +257,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
             <p>No supplementary programs yet. Upload a Hyrox or conditioning program above.</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-white/[0.04]">
             {supplementaryPrograms.map(program => (
               <ProgramRow
                 key={program.id}
