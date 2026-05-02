@@ -217,7 +217,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
       <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="bg-indigo-600/20 border-b border-indigo-500/20 px-5 py-3 flex items-center justify-between">
           <h2 className="text-white font-bold text-sm">Primary Programs</h2>
-          <span className="text-indigo-200 text-sm">{primaryPrograms.length} program{primaryPrograms.length !== 1 ? 's' : ''}</span>
+          <span className="text-indigo-300/60 text-xs">{primaryPrograms.length} program{primaryPrograms.length !== 1 ? 's' : ''}</span>
         </div>
 
         {primaryPrograms.length === 0 ? (
