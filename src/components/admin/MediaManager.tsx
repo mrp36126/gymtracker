@@ -15,9 +15,7 @@ interface Program {
   exercises: Exercise[];
 }
 
-interface Props {
-  programs: Program[];
-}
+interface Props { programs: Program[]; }
 
 export default function MediaManager({ programs }: Props) {
   const [uploading, setUploading] = useState<string | null>(null);
@@ -35,17 +33,15 @@ export default function MediaManager({ programs }: Props) {
     setUploading(exerciseId);
     setError('');
     setSuccess('');
-
     const fd = new FormData();
     fd.append('file', file);
     fd.append('exerciseId', exerciseId);
-
     try {
       const res = await fetch('/api/admin/media', { method: 'POST', body: fd });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setMediaMap(prev => ({ ...prev, [exerciseId]: json.data.mediaUrl }));
-      setSuccess(`Media uploaded for exercise!`);
+      setSuccess('Media uploaded successfully!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (e: any) {
       setError(e.message);
@@ -57,12 +53,16 @@ export default function MediaManager({ programs }: Props) {
   const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-sm">{error}</div>
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
       )}
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-600 text-sm">✅ {success}</div>
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
+          <p className="text-emerald-400 text-sm">{success}</p>
+        </div>
       )}
 
       {programs.map(program => {
@@ -73,15 +73,15 @@ export default function MediaManager({ programs }: Props) {
         }, {} as Record<string, Exercise[]>);
 
         return (
-          <div key={program.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-indigo-600 px-5 py-3">
-              <h2 className="text-white font-bold">{program.name}</h2>
+          <div key={program.id} className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
+            <div className="bg-indigo-600/20 border-b border-indigo-500/20 px-5 py-3">
+              <h2 className="text-white font-bold text-sm">{program.name}</h2>
             </div>
 
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-white/[0.04]">
               {dayOrder.filter(d => byDay[d]).map(day => (
                 <div key={day}>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-5 py-2 bg-gray-50">
+                  <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest px-5 py-2.5 bg-white/[0.02]">
                     {day}
                   </p>
                   {byDay[day].map(ex => {
@@ -91,8 +91,8 @@ export default function MediaManager({ programs }: Props) {
 
                     return (
                       <div key={ex.id} className="flex items-center gap-4 px-5 py-4">
-                        {/* Preview thumbnail */}
-                        <div className="w-20 h-14 bg-indigo-50 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {/* Thumbnail */}
+                        <div className="w-16 h-12 bg-white/[0.06] rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                           {currentMedia ? (
                             isVideo ? (
                               <video src={currentMedia} className="w-full h-full object-cover" muted />
@@ -101,28 +101,30 @@ export default function MediaManager({ programs }: Props) {
                               <img src={currentMedia} alt={ex.name} className="w-full h-full object-cover" />
                             )
                           ) : (
-                            <span className="text-2xl">📷</span>
+                            <svg width="16" height="16" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" viewBox="0 0 24 24">
+                              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+                            </svg>
                           )}
                         </div>
 
-                        {/* Exercise info */}
+                        {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-800 text-sm">{ex.name}</p>
-                          <p className="text-xs text-gray-400">{ex.muscleGroup}</p>
+                          <p className="text-sm font-semibold text-white truncate">{ex.name}</p>
+                          <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">{ex.muscleGroup}</p>
                           {currentMedia && (
-                            <p className="text-xs text-green-600 mt-0.5 truncate">✅ Media linked</p>
+                            <p className="text-[10px] text-emerald-400 mt-0.5 font-semibold">Linked</p>
                           )}
                         </div>
 
-                        {/* Upload button */}
-                        <label className={`cursor-pointer flex-shrink-0 text-xs px-3 py-2 rounded-lg font-medium transition
-                          ${isUploading
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        {/* Upload */}
+                        <label className={`cursor-pointer flex-shrink-0 text-xs px-3 py-2 rounded-xl font-bold transition ${
+                          isUploading
+                            ? 'bg-white/[0.04] text-white/20 cursor-not-allowed'
                             : currentMedia
-                              ? 'bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'
-                              : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          }`}>
-                          {isUploading ? 'Uploading…' : currentMedia ? 'Replace' : 'Upload'}
+                              ? 'bg-white/[0.06] text-white/50 hover:bg-white/10 hover:text-white/70 border border-white/[0.08]'
+                              : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                        }`}>
+                          {isUploading ? 'Uploading...' : currentMedia ? 'Replace' : 'Upload'}
                           <input
                             type="file"
                             accept="image/*,video/*"
