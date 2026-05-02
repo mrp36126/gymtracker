@@ -189,7 +189,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
 
           <div
             onClick={() => fileRef.current?.click()}
-            className="cursor-pointer border-2 border-dashed border-indigo-200 rounded-xl p-6 text-center text-gray-400 hover:border-indigo-400 transition">
+            className="cursor-pointer border border-dashed border-white/[0.1] rounded-xl p-6 text-center text-white/30 hover:border-indigo-500/40 transition">
             {selectedFile ? (
               <p className="text-indigo-600 font-medium">{selectedFile.name}</p>
             ) : (
