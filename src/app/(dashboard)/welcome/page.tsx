@@ -10,10 +10,10 @@ export default async function WelcomePage() {
     user = await getAuthUser();
   } catch (err: any) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-8">
-        <div className="bg-red-50 rounded-2xl p-6 max-w-lg">
-          <h2 className="font-bold text-red-700 mb-2">Database connection error</h2>
-          <p className="text-red-600 text-sm">{err.message}</p>
+      <main className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 max-w-lg w-full">
+          <p className="text-red-400 font-semibold mb-1">Database error</p>
+          <p className="text-red-400/70 text-sm">{err.message}</p>
         </div>
       </main>
     );
@@ -23,84 +23,98 @@ export default async function WelcomePage() {
 
   const todayName = getTodayName();
 
-  // Get the active primary program
   let activeProgram = null;
   let supplementaryPrograms: any[] = [];
+  let todayExerciseCount = 0;
 
   try {
     activeProgram = await prisma.program.findFirst({
       where: { isActive: true, programType: 'primary' },
     });
 
-    // Get all active supplementary programs
+    if (activeProgram) {
+      todayExerciseCount = await prisma.exercise.count({
+        where: { programId: activeProgram.id, day: todayName },
+      });
+    }
+
     supplementaryPrograms = await prisma.program.findMany({
       where: { isActive: true, programType: 'supplementary' },
       orderBy: { name: 'asc' },
     });
-  } catch (err) {
-    // continue
-  }
+  } catch (err) {}
+
+  const initials = user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-2xl mx-auto">
+    <main className="min-h-screen bg-[#0A0A0F] pb-24">
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-indigo-700 mb-1">
-            Hello, {user.name}
-          </h1>
-          <p className="text-gray-500">
-            Today is <span className="font-semibold text-indigo-600">{todayName}</span>.
-            {activeProgram ? ` Active program: "${activeProgram.name}".` : ''}
+      {/* Top nav */}
+      <nav className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+          <span className="font-bold text-sm tracking-tight">GymTracker</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-white/40 font-medium">{todayName}</span>
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">
+            {initials}
+          </div>
+        </div>
+      </nav>
+
+      <div className="px-6 pt-7 pb-4">
+
+        {/* Greeting */}
+        <div className="mb-7">
+          <p className="text-xs font-semibold tracking-widest text-indigo-400 uppercase mb-1">{greeting}</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">Hello, {user.name}</h1>
+          <p className="text-sm text-white/40 mt-1">
+            {activeProgram ? activeProgram.name : 'No active program'} 
+            {todayExerciseCount > 0 ? ` · ${todayExerciseCount} exercises today` : ''}
           </p>
         </div>
 
         {/* Today's primary workout */}
-        <div className="mb-4">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-            Today&apos;s Workout
-          </p>
-          {activeProgram ? (
-            <Link
-              href={'/workout/' + todayName.toLowerCase()}
-              className="block bg-indigo-600 text-white rounded-2xl p-6 hover:bg-indigo-700 transition">
-              <p className="text-sm uppercase tracking-wider opacity-75 mb-1">Primary Program</p>
-              <p className="text-2xl font-bold">{todayName} Session</p>
-              <p className="text-sm opacity-75 mt-1">{activeProgram.name}</p>
-            </Link>
-          ) : (
-            <div className="bg-white rounded-2xl p-6 border border-dashed border-indigo-200 text-center">
-              <p className="text-gray-400">No active program.</p>
-              {user.isAdmin && (
-                <Link href="/admin" className="text-indigo-600 text-sm mt-1 inline-block hover:underline">
-                  Go to Admin to activate one
-                </Link>
-              )}
+        {activeProgram ? (
+          <Link href={'/workout/' + todayName.toLowerCase()} className="block mb-4">
+            <div className="relative bg-indigo-600 rounded-2xl p-6 overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-8 translate-x-8"></div>
+              <div className="absolute bottom-0 right-16 w-20 h-20 bg-white/5 rounded-full translate-y-6"></div>
+              <p className="text-xs font-semibold tracking-widest text-white/60 uppercase mb-2">Today&apos;s Workout</p>
+              <p className="text-2xl font-extrabold text-white tracking-tight">{todayName} Session</p>
+              <p className="text-sm text-white/60 mt-1">{activeProgram.name}</p>
+              <div className="absolute right-6 top-1/2 -translate-y-1/2 text-white/40 text-2xl">→</div>
             </div>
-          )}
-        </div>
+          </Link>
+        ) : (
+          <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6 mb-4 text-center">
+            <p className="text-white/40 text-sm">No active program</p>
+            {user.isAdmin && (
+              <Link href="/admin" className="text-indigo-400 text-sm mt-1 inline-block hover:text-indigo-300 transition">
+                Go to Admin to activate one →
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Supplementary programs */}
         {supplementaryPrograms.length > 0 && (
           <div className="mb-4">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-              Additional Programs
-            </p>
+            <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-3">Additional Programs</p>
             <div className="space-y-3">
-              {supplementaryPrograms.map(prog => (
-                <Link
-                  key={prog.id}
-                  href={'/supplementary/' + prog.id}
-                  className="block bg-white border border-indigo-200 rounded-2xl p-5 hover:shadow-md transition">
-                  <div className="flex items-center justify-between">
+              {supplementaryPrograms.map((prog: any) => (
+                <Link key={prog.id} href={'/supplementary/' + prog.id} className="block">
+                  <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 flex items-center justify-between hover:border-indigo-500/40 transition">
                     <div>
-                      <p className="font-bold text-gray-800">{prog.name}</p>
+                      <p className="font-bold text-white text-sm">{prog.name}</p>
                       {prog.description && (
-                        <p className="text-sm text-gray-400 mt-0.5">{prog.description}</p>
+                        <p className="text-xs text-white/40 mt-0.5">{prog.description}</p>
                       )}
                     </div>
-                    <span className="text-indigo-600 font-bold text-lg">→</span>
+                    <span className="text-indigo-400 font-bold">→</span>
                   </div>
                 </Link>
               ))}
@@ -108,22 +122,34 @@ export default async function WelcomePage() {
           </div>
         )}
 
-        {/* Bottom row */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <Link href="/progress"
-            className="block bg-white border border-indigo-200 rounded-2xl p-5 hover:shadow-md transition">
-            <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Progress</p>
-            <p className="text-xl font-bold text-indigo-700">View Charts</p>
+        {/* Stats row */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <Link href="/progress" className="block">
+            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+              <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
+              <p className="text-lg font-extrabold text-white">View Charts</p>
+            </div>
           </Link>
-
-          {user.isAdmin && (
-            <Link href="/admin"
-              className="block bg-white border border-indigo-200 rounded-2xl p-5 hover:shadow-md transition">
-              <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Admin</p>
-              <p className="text-xl font-bold text-indigo-700">Manage</p>
-            </Link>
-          )}
+          <Link href="/program" className="block">
+            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+              <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Program</p>
+              <p className="text-lg font-extrabold text-white">View Plan</p>
+            </div>
+          </Link>
         </div>
+
+        {/* Admin */}
+        {user.isAdmin && (
+          <Link href="/admin" className="block">
+            <div className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-4 flex items-center justify-between hover:border-white/10 transition">
+              <div>
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-0.5">Admin</p>
+                <p className="text-sm font-bold text-white/70">Manage Programs & Media</p>
+              </div>
+              <span className="text-white/20 text-lg">→</span>
+            </div>
+          </Link>
+        )}
       </div>
     </main>
   );
