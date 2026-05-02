@@ -6,21 +6,19 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user, response } = await requireAuth();
-  if (response) return response;
-  if (!user!.isAdmin) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+const program = await prisma.program.findUnique({ where: { id } });
+if (!program) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { id } = await params;
+// Only deactivate programs of the same type
+await prisma.program.updateMany({
+  where: { programType: program.programType },
+  data: { isActive: false },
+});
 
-  await prisma.program.updateMany({
-    where: { userId: user!.id },
-    data: { isActive: false },
-  });
-
-  await prisma.program.update({
-    where: { id },
-    data: { isActive: true },
-  });
+await prisma.program.update({
+  where: { id },
+  data: { isActive: true },
+});
 
   return NextResponse.json({ success: true });
 }
