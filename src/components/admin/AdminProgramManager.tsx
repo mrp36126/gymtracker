@@ -140,7 +140,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
       {/* Upload new program */}
       <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="bg-indigo-600/20 border-b border-indigo-500/20 px-5 py-3">
-          <h2 className="text-white font-bold">Upload New Program</h2>
+          <h2 className="text-white font-bold text-sm">Upload New Program</h2>
         </div>
         <div className="p-5 space-y-3">
 
@@ -216,7 +216,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
       {/* Primary Programs */}
       <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="bg-indigo-600/20 border-b border-indigo-500/20 px-5 py-3 flex items-center justify-between">
-          <h2 className="text-white font-bold">Primary Programs</h2>
+          <h2 className="text-white font-bold text-sm">Primary Programs</h2>
           <span className="text-indigo-200 text-sm">{primaryPrograms.length} program{primaryPrograms.length !== 1 ? 's' : ''}</span>
         </div>
 
@@ -248,7 +248,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
       {/* Supplementary Programs */}
       <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="bg-purple-600/20 border-b border-purple-500/20 px-5 py-3 flex items-center justify-between">
-          <h2 className="text-white font-bold">Supplementary Programs</h2>
+          <h2 className="text-white font-bold text-sm">Supplementary Programs</h2>
           <span className="text-purple-200 text-sm">{supplementaryPrograms.length} program{supplementaryPrograms.length !== 1 ? 's' : ''}</span>
         </div>
 
