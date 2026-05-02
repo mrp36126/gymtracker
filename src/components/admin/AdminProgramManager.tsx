@@ -132,7 +132,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
         </div>
       )}
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm">
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-emerald-400 text-sm">
           {success}
         </div>
       )}
