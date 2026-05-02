@@ -127,7 +127,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
     <div className="space-y-6">
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-sm whitespace-pre-wrap">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-sm whitespace-pre-wrap">
           {error}
         </div>
       )}
