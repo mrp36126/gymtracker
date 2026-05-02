@@ -334,7 +334,7 @@ function ProgramRow({
             </div>
           )}
           {program.description && (
-            <p className="text-xs text-gray-400 mt-0.5">{program.description}</p>
+            <p className="text-xs text-white/40 mt-0.5">{program.description}</p>
           )}
           <p className="text-xs text-gray-300 mt-1">
             {program._count.exercises} exercises · Added {new Date(program.createdAt).toLocaleDateString()}
