@@ -374,7 +374,7 @@ function ProgramRow({
           <button
             onClick={() => onDelete(program.id, program.name)}
             disabled={deleting === program.id}
-            className="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 disabled:opacity-50 transition ml-auto">
+            className="text-xs bg-red-500/10 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-100 disabled:opacity-50 transition ml-auto">
             {deleting === program.id ? 'Deleting...' : 'Delete'}
           </button>
         )}
