@@ -325,7 +325,7 @@ function ProgramRow({
             </div>
           ) : (
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-bold text-gray-800">{program.name}</p>
+              <p className="font-bold text-white">{program.name}</p>
               {program.isActive && (
                 <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
                   Active
