@@ -24,8 +24,7 @@ export default async function SupplementaryProgramPage({
 
   if (!program) redirect('/welcome');
 
-  // Group by day
-  const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
   const byDay = program.exercises.reduce((acc, ex) => {
     if (!acc[ex.day]) acc[ex.day] = [];
@@ -35,12 +34,10 @@ export default async function SupplementaryProgramPage({
 
   const availableDays = dayOrder.filter(d => byDay[d]);
 
-  // Attach last log to each exercise
   const exercisesByDay: Record<string, Exercise[]> = {};
-
   for (const day of availableDays) {
     exercisesByDay[day] = await Promise.all(
-      byDay[day].map(async (ex) => {
+      byDay[day].map(async ex => {
         const lastLog = await prisma.workoutLog.findFirst({
           where: { exerciseId: ex.id, userId: user.id },
           orderBy: { loggedAt: 'desc' },
@@ -51,44 +48,58 @@ export default async function SupplementaryProgramPage({
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-indigo-700">{program.name}</h1>
-          <Link href="/welcome" className="text-sm text-indigo-600 hover:underline">
-            ← Home
-          </Link>
+    <main className="min-h-screen bg-[#0A0A0F] pb-10">
+
+      {/* Header */}
+      <div className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
+        <Link href="/welcome" className="text-white/40 hover:text-white/70 transition text-sm">← Home</Link>
+        <div className="text-center">
+          <p className="text-xs font-semibold text-white/30 uppercase tracking-widest">Supplementary</p>
+          <p className="text-sm font-bold text-white">{program.name}</p>
         </div>
+        <div className="w-10"></div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 pt-5">
 
         {program.description && (
-          <p className="text-gray-400 text-sm mb-6">{program.description}</p>
+          <p className="text-white/40 text-sm mb-5 text-center">{program.description}</p>
         )}
 
         {/* Day tabs */}
         {availableDays.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
-            {availableDays.map((day) => (
-              <Link
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+            {availableDays.map(day => (
+              
                 key={day}
-                href={`#${day.toLowerCase()}`}
-                className="flex-shrink-0 text-xs bg-white border border-indigo-200 text-indigo-700
-                  px-3 py-1.5 rounded-full hover:bg-indigo-50 transition font-medium"
-              >
+                href={'#' + day.toLowerCase()}
+                className="flex-shrink-0 text-xs bg-white/[0.06] border border-white/[0.08] text-white/60 px-3 py-1.5 rounded-full hover:bg-white/10 hover:text-white transition font-semibold">
                 {day}
-              </Link>
+              </a>
             ))}
           </div>
         )}
 
         {/* Exercises by day */}
-        {availableDays.map((day) => (
+        {availableDays.map(day => (
           <div key={day} id={day.toLowerCase()} className="mb-8">
-            <h2 className="text-lg font-bold text-gray-700 mb-3 pb-2 border-b border-gray-200">
-              {day}
-            </h2>
-            {exercisesByDay[day].map((ex) => (
-              <ExerciseCard key={ex.id} exercise={ex} />
+            <div className="flex items-center gap-3 mb-4">
+              <p className="text-xs font-bold text-white/30 uppercase tracking-widest">{day}</p>
+              <div className="h-px flex-1 bg-white/[0.05]"></div>
+              <span className="text-[10px] text-white/20">
+                {exercisesByDay[day].length} exercises
+              </span>
+            </div>
+            {exercisesByDay[day].map((ex, i) => (
+              <div key={ex.id}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+                    {i + 1}
+                  </div>
+                  <div className="h-px flex-1 bg-white/[0.04]"></div>
+                </div>
+                <ExerciseCard exercise={ex} />
+              </div>
             ))}
           </div>
         ))}
