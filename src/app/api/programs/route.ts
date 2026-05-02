@@ -49,25 +49,32 @@ export async function POST(req: NextRequest) {
   await supabase.storage.from('gymtracker').upload(filePath, file, { upsert: true });
   const { data: urlData } = supabase.storage.from('gymtracker').getPublicUrl(filePath);
 
-  const program = await prisma.program.create({
-    data: {
-      name,
-      csvUrl: urlData.publicUrl,
-      userId: user!.id,
-      exercises: {
-        create: parsed.map(row => ({
-          name:        row.exercise_name,
-          muscleGroup: row.muscle_group,
-          day:         row.day,
-          order:       row.order,
-          defaultSets: row.sets,
-          defaultReps: row.reps,
-          notes:       row.notes ?? '',
-        })),
-      },
+const name = formData.get('name') as string | null;
+const programType = (formData.get('programType') as string) || 'primary';
+const description = (formData.get('description') as string) || '';
+
+// In the prisma.program.create data:
+const program = await prisma.program.create({
+  data: {
+    name,
+    description: description || null,
+    programType,
+    csvUrl: urlData.publicUrl,
+    userId: user!.id,
+    exercises: {
+      create: parsed.map(row => ({
+        name:        row.exercise_name,
+        muscleGroup: row.muscle_group,
+        day:         row.day,
+        order:       row.order,
+        defaultSets: row.sets,
+        defaultReps: row.reps,
+        notes:       row.notes ?? '',
+      })),
     },
-    include: { exercises: true },
-  });
+  },
+  include: { exercises: true },
+});
 
   return NextResponse.json({ data: program }, { status: 201 });
 }
