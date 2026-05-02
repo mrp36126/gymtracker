@@ -28,15 +28,19 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get('file') as File | null;
   const name = formData.get('name') as string | null;
+  const programType = (formData.get('programType') as string) || 'primary';
+  const description = (formData.get('description') as string) || '';
 
   if (!file || !name) {
     return NextResponse.json({ error: 'file and name are required' }, { status: 400 });
   }
+
   if (!file.name.endsWith('.csv')) {
     return NextResponse.json({ error: 'Only CSV files are accepted' }, { status: 400 });
   }
 
   const csvText = await file.text();
+
   let parsed;
   try {
     parsed = parseProgramCsv(csvText);
@@ -44,37 +48,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 422 });
   }
 
+  // Upload to Supabase Storage
   const supabase = await createSupabaseServerClient();
   const filePath = `programs/${Date.now()}.csv`;
+
   await supabase.storage.from('gymtracker').upload(filePath, file, { upsert: true });
   const { data: urlData } = supabase.storage.from('gymtracker').getPublicUrl(filePath);
 
-const name = formData.get('name') as string | null;
-const programType = (formData.get('programType') as string) || 'primary';
-const description = (formData.get('description') as string) || '';
-
-// In the prisma.program.create data:
-const program = await prisma.program.create({
-  data: {
-    name,
-    description: description || null,
-    programType,
-    csvUrl: urlData.publicUrl,
-    userId: user!.id,
-    exercises: {
-      create: parsed.map(row => ({
-        name:        row.exercise_name,
-        muscleGroup: row.muscle_group,
-        day:         row.day,
-        order:       row.order,
-        defaultSets: row.sets,
-        defaultReps: row.reps,
-        notes:       row.notes ?? '',
-      })),
+  // Create program in database
+  const program = await prisma.program.create({
+    data: {
+      name,
+      description: description || null,
+      programType,
+      csvUrl: urlData.publicUrl,
+      userId: user!.id,
+      exercises: {
+        create: parsed.map((row) => ({
+          name: row.exercise_name,
+          muscleGroup: row.muscle_group,
+          day: row.day,
+          order: row.order,
+          defaultSets: row.sets,
+          defaultReps: row.reps,
+          notes: row.notes ?? '',
+        })),
+      },
     },
-  },
-  include: { exercises: true },
-});
+    include: { exercises: true },
+  });
 
   return NextResponse.json({ data: program }, { status: 201 });
 }
