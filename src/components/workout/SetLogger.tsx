@@ -41,29 +41,35 @@ export default function SetLogger({ exerciseId, onSave }: Props) {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: 'Weight (kg)', value: weight, set: setWeight, placeholder: 'e.g. 80' },
-          { label: 'Sets', value: sets, set: setSets, placeholder: 'e.g. 4' },
-          { label: 'Reps', value: reps, set: setReps, placeholder: 'e.g. 10' },
+          { label: 'Weight (kg)', value: weight, set: setWeight, placeholder: '80' },
+          { label: 'Sets', value: sets, set: setSets, placeholder: '4' },
+          { label: 'Reps', value: reps, set: setReps, placeholder: '10' },
         ].map(f => (
-          <div key={f.label}>
-            <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
-            <input type="number" min={0} step="0.5"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
-                focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          <div key={f.label} className="bg-white/[0.06] border border-white/[0.08] rounded-xl p-3 text-center">
+            <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-2">
+              {f.label}
+            </label>
+            <input
+              type="number"
+              min={0}
+              step="0.5"
+              className="w-full bg-transparent text-white text-base font-bold text-center focus:outline-none placeholder:text-white/20"
               placeholder={f.placeholder}
               value={f.value}
-              onChange={e => f.set(e.target.value)} />
+              onChange={e => f.set(e.target.value)}
+            />
           </div>
         ))}
       </div>
-      {error && <p className="text-red-500 text-xs">{error}</p>}
-      <button onClick={handleSubmit} disabled={saving}
-        className="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium
-          hover:bg-indigo-700 disabled:opacity-50 transition">
-        {saving ? 'Saving…' : 'Log This Set'}
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      <button
+        onClick={handleSubmit}
+        disabled={saving}
+        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl py-3.5 text-sm font-bold tracking-wide transition disabled:opacity-50">
+        {saving ? 'Saving...' : 'Log This Set'}
       </button>
     </div>
   );
