@@ -149,7 +149,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
             placeholder="Program name (e.g. Push Pull Legs)"
             value={newName}
             onChange={e => setNewName(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 transition"
           />
 
           <input
@@ -157,7 +157,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
             placeholder="Description (optional) e.g. Afternoon conditioning"
             value={description}
             onChange={e => setDescription(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 transition"
           />
 
           <div className="flex gap-3">
