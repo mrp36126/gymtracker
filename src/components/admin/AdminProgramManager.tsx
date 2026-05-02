@@ -240,14 +240,14 @@ export default function AdminProgramManager({ programs: initial }: Props) {
                   </button>
 
                   
-                    href={`/program/${program.id}`}
+                    href={'/program/' + program.id}
                     className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg
                       hover:bg-gray-100 transition">
                     View Exercises
                   </a>
 
                   
-                    href="/admin/media"
+                   href="/admin/media"
                     className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg
                       hover:bg-gray-100 transition">
                     Manage Media
