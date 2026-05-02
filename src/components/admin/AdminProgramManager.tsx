@@ -360,13 +360,13 @@ function ProgramRow({
 
         <Link
           href={'/program/' + program.id}
-          className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">
+          className="text-xs bg-white/[0.04] text-white/50 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">
           View Exercises
         </Link>
 
         <Link
           href="/admin/media"
-          className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">
+          className="text-xs bg-white/[0.04] text-white/50 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">
           Manage Media
         </Link>
 
