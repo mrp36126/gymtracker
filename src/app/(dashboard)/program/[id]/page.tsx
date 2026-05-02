@@ -10,11 +10,13 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
 
   const program = await prisma.program.findFirst({
-    where: { id, userId: user.id },
+    where: { id },
     include: { exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] } },
   });
 
   if (!program) redirect('/program');
+
+  const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
   const byDay = program.exercises.reduce((acc, ex) => {
     if (!acc[ex.day]) acc[ex.day] = [];
@@ -22,36 +24,45 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
     return acc;
   }, {} as Record<string, typeof program.exercises>);
 
-  const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-indigo-700">{program.name}</h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {program.isActive ? '✅ Active program' : 'Inactive'}
-            </p>
-          </div>
-          <Link href="/program" className="text-sm text-indigo-600 hover:underline">← Programs</Link>
-        </div>
+    <main className="min-h-screen bg-[#0A0A0F] pb-10">
 
+      {/* Header */}
+      <div className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
+        <Link href="/program" className="text-white/40 hover:text-white/70 transition text-sm">← Programs</Link>
+        <div className="text-center">
+          <p className="text-xs font-semibold text-white/30 uppercase tracking-widest">Program</p>
+          <p className="text-sm font-bold text-white">{program.name}</p>
+        </div>
+        <div className="w-10">
+          {program.isActive && (
+            <span className="text-[10px] font-bold text-emerald-400">Active</span>
+          )}
+        </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-5 pt-6">
         {dayOrder.filter(d => byDay[d]).map(day => (
           <div key={day} className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-bold text-gray-700">{day}</h2>
-              <Link href={`/workout/${day.toLowerCase()}`}
-                className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition">
-                Start {day} Workout →
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <p className="text-xs font-bold text-white/30 uppercase tracking-widest">{day}</p>
+                <div className="h-px w-8 bg-white/[0.05]"></div>
+              </div>
+              <Link
+                href={'/workout/' + day.toLowerCase()}
+                className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-xl hover:bg-indigo-500 transition font-semibold">
+                Start {day} →
               </Link>
             </div>
             <div className="space-y-2">
               {byDay[day].map(ex => (
-                <div key={ex.id} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex justify-between items-center">
+                <div key={ex.id} className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3.5 flex justify-between items-center">
                   <div>
-                    <p className="font-medium text-gray-800">{ex.name}</p>
-                    <p className="text-xs text-gray-400">{ex.muscleGroup} · {ex.defaultSets} sets × {ex.defaultReps} reps</p>
+                    <p className="text-sm font-semibold text-white">{ex.name}</p>
+                    <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">
+                      {ex.muscleGroup} · {ex.defaultSets} sets × {ex.defaultReps} reps
+                    </p>
                   </div>
                 </div>
               ))}
