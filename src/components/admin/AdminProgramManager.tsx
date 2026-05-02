@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface Program {
   id: string;
@@ -239,19 +240,21 @@ export default function AdminProgramManager({ programs: initial }: Props) {
                     Rename
                   </button>
 
-                  
-                    href={'/program/' + program.id}
+                  <Link
+                    href={`/program/${program.id}`}
                     className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg
-                      hover:bg-gray-100 transition">
+                      hover:bg-gray-100 transition"
+                  >
                     View Exercises
-                  </a>
+                  </Link>
 
-                  
+                  <Link
                     href="/admin/media"
                     className="text-xs bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg
-                      hover:bg-gray-100 transition">
+                      hover:bg-gray-100 transition"
+                  >
                     Manage Media
-                  </a>
+                  </Link>
 
                   {!program.isActive && (
                     <button
