@@ -27,6 +27,7 @@ model Program {
   description String?
   csvUrl      String?
   isActive    Boolean    @default(false)
+  programType String     @default("primary")
   userId      String
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercises   Exercise[]
