@@ -7,9 +7,7 @@ import ProgressBadge from './ProgressBadge';
 interface Props { exercise: Exercise; }
 
 export default function ExerciseCard({ exercise }: Props) {
-  const [lastLog, setLastLog] = useState<WorkoutLog | null>(
-    exercise.lastLog ?? null
-  );
+  const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
   const [newLog, setNewLog] = useState<WorkoutLog | null>(null);
 
   const handleSave = (log: WorkoutLog) => {
@@ -20,79 +18,65 @@ export default function ExerciseCard({ exercise }: Props) {
   const isVideo = exercise.mediaUrl?.endsWith('.mp4') || exercise.mediaUrl?.endsWith('.mov');
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden mb-4">
 
       {/* Media */}
-      <div className="relative h-56 bg-gray-100 overflow-hidden">
+      <div className="relative h-52 bg-[#12121A] overflow-hidden">
         {exercise.mediaUrl ? (
           isVideo ? (
-            <video
-              src={exercise.mediaUrl}
-              className="w-full h-full object-cover object-center"
-              controls
-              muted
-              loop
-              playsInline
-            />
+            <video src={exercise.mediaUrl} className="w-full h-full object-cover" controls muted loop playsInline />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={exercise.mediaUrl}
-              alt={exercise.name}
-              className="w-full h-full object-contain object-center bg-gray-100"
-            />
+            <img src={exercise.mediaUrl} alt={exercise.name} className="w-full h-full object-contain" />
           )
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-indigo-50">
-            <div className="text-center">
-              <p className="text-4xl mb-1">🏋️</p>
-              <p className="text-xs text-gray-400">No image yet</p>
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center">
+              <svg width="28" height="28" fill="none" stroke="#6366F1" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M6 4v16M18 4v16M6 12h12M2 9h4M18 9h4M2 15h4M18 15h4"/>
+              </svg>
             </div>
           </div>
         )}
-        <span className="absolute top-2 right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">
+        <span className="absolute top-3 right-3 bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide uppercase">
           {exercise.muscleGroup}
         </span>
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-bold text-lg text-gray-800">{exercise.name}</h3>
-        <p className="text-sm text-gray-400 mb-3">
+      <div className="p-5">
+        <h3 className="text-lg font-extrabold text-white tracking-tight">{exercise.name}</h3>
+        <p className="text-xs text-white/40 mt-1 mb-4">
           Target: {exercise.defaultSets} sets × {exercise.defaultReps} reps
           {exercise.notes ? ` · ${exercise.notes}` : ''}
         </p>
 
-        {/* Previous session */}
+        {/* Last session */}
         {lastLog && !newLog && (
-          <div className="bg-gray-50 rounded-xl p-3 mb-3 text-sm">
-            <p className="text-gray-500 mb-1 font-medium">Last session</p>
-            <p className="text-gray-700">
-              {lastLog.weight}kg · {lastLog.sets} sets · {lastLog.reps} reps
-            </p>
+          <div className="bg-white/[0.04] rounded-xl p-3.5 mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-1">Last Session</p>
+              <p className="text-sm font-semibold text-white">
+                {lastLog.weight}kg · {lastLog.sets} sets · {lastLog.reps} reps
+              </p>
+            </div>
           </div>
         )}
 
-        {/* New log + comparison */}
+        {/* New log result */}
         {newLog && lastLog && (
-          <div className="bg-green-50 rounded-xl p-3 mb-3 text-sm flex items-center gap-3">
-            <div>
-              <p className="font-medium text-gray-700">Logged!</p>
-              <p className="text-gray-600">
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3.5 mb-4 flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-[10px] font-semibold text-indigo-400 uppercase tracking-widest mb-1">Logged</p>
+              <p className="text-sm font-semibold text-white">
                 {newLog.weight}kg · {newLog.sets} sets · {newLog.reps} reps
               </p>
             </div>
-            <div className="ml-auto flex gap-2">
-              <ProgressBadge
-                label="Weight"
-                current={newLog.weight}
-                previous={lastLog.weight}
-              />
-              <ProgressBadge
-                label="Volume"
+            <div className="flex gap-2">
+              <ProgressBadge label="Weight" current={newLog.weight} previous={lastLog.weight} />
+              <ProgressBadge label="Volume"
                 current={newLog.weight * newLog.sets * newLog.reps}
-                previous={lastLog.weight * lastLog.sets * lastLog.reps}
-              />
+                previous={lastLog.weight * lastLog.sets * lastLog.reps} />
             </div>
           </div>
         )}
