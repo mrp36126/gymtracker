@@ -2,16 +2,15 @@
 import { useState } from 'react';
 import type { Exercise, WorkoutLog } from '@/types';
 import SetLogger from './SetLogger';
-import ProgressBadge from './ProgressBadge';
 
 interface Props { exercise: Exercise; }
 
 export default function ExerciseCard({ exercise }: Props) {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
-  const [newLog, setNewLog] = useState<WorkoutLog | null>(null);
+  const [completedSets, setCompletedSets] = useState(0);
 
-  const handleSave = (log: WorkoutLog) => {
-    setNewLog(log);
+  const handleSetComplete = (log: WorkoutLog) => {
+    setCompletedSets(prev => prev + 1);
     setLastLog(log);
   };
 
@@ -24,18 +23,10 @@ export default function ExerciseCard({ exercise }: Props) {
       <div className="relative w-full bg-[#12121A] overflow-hidden" style={{ aspectRatio: '16/9' }}>
         {exercise.mediaUrl ? (
           isVideo ? (
-            <video
-              src={exercise.mediaUrl}
-              className="w-full h-full object-cover"
-              controls muted loop playsInline
-            />
+            <video src={exercise.mediaUrl} className="w-full h-full object-cover" controls muted loop playsInline />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={exercise.mediaUrl}
-              alt={exercise.name}
-              className="w-full h-full object-contain"
-            />
+            <img src={exercise.mediaUrl} alt={exercise.name} className="w-full h-full object-contain" />
           )
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ minHeight: '160px' }}>
@@ -49,47 +40,32 @@ export default function ExerciseCard({ exercise }: Props) {
         <span className="absolute top-3 right-3 bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide uppercase">
           {exercise.muscleGroup}
         </span>
+        {completedSets > 0 && (
+          <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
+            {completedSets} sets done
+          </div>
+        )}
       </div>
 
       {/* Content */}
       <div className="p-4">
-        <h3 className="text-base font-extrabold text-white tracking-tight">{exercise.name}</h3>
-        <p className="text-xs text-white/40 mt-1 mb-4">
-          Target: {exercise.defaultSets} sets × {exercise.defaultReps} reps
+
+        {/* Exercise header */}
+        <div className="flex items-start justify-between mb-1">
+          <h3 className="text-base font-extrabold text-white tracking-tight flex-1 pr-2">{exercise.name}</h3>
+        </div>
+        <p className="text-xs text-white/30 mb-4">
+          {exercise.defaultSets} sets · {exercise.defaultReps} reps target
           {exercise.notes ? ` · ${exercise.notes}` : ''}
         </p>
 
-        {/* Last session */}
-        {lastLog && !newLog && (
-          <div className="bg-white/[0.04] rounded-xl p-3 mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-1">Last Session</p>
-              <p className="text-sm font-semibold text-white">
-                {lastLog.weight}kg · {lastLog.sets} sets · {lastLog.reps} reps
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* New log result */}
-        {newLog && lastLog && (
-          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-semibold text-indigo-400 uppercase tracking-widest">Logged</p>
-              <div className="flex gap-2">
-                <ProgressBadge label="Weight" current={newLog.weight} previous={lastLog.weight} />
-                <ProgressBadge label="Volume"
-                  current={newLog.weight * newLog.sets * newLog.reps}
-                  previous={lastLog.weight * lastLog.sets * lastLog.reps} />
-              </div>
-            </div>
-            <p className="text-sm font-semibold text-white">
-              {newLog.weight}kg · {newLog.sets} sets · {newLog.reps} reps
-            </p>
-          </div>
-        )}
-
-        <SetLogger exerciseId={exercise.id} onSave={handleSave} />
+        <SetLogger
+          exerciseId={exercise.id}
+          defaultSets={exercise.defaultSets}
+          defaultReps={exercise.defaultReps}
+          lastLog={lastLog}
+          onSetComplete={handleSetComplete}
+        />
       </div>
     </div>
   );
