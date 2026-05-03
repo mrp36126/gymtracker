@@ -45,7 +45,7 @@ export default async function ProgressPage() {
             { label: 'Volume (kg)', value: Math.round(totalVolume).toLocaleString() },
           ].map(stat => (
             <div key={stat.label} className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-4 text-center">
-              <p className="text-xl font-extrabold text-white">{stat.value}</p>
+              <p className="text-lg font-extrabold text-white truncate">{stat.value}</p>
               <p className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mt-1">{stat.label}</p>
             </div>
           ))}
