@@ -92,7 +92,7 @@ export default function MediaManager({ programs }: Props) {
                     return (
                       <div key={ex.id} className="flex items-center gap-3 px-4 py-4 min-w-0">
                         {/* Thumbnail */}
-                        <div className="w-16 h-12 bg-white/[0.06] rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        <div className="w-14 h-10 bg-white/[0.06] rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                           {currentMedia ? (
                             isVideo ? (
                               <video src={currentMedia} className="w-full h-full object-cover" muted />
