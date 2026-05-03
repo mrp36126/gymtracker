@@ -90,7 +90,7 @@ export default function MediaManager({ programs }: Props) {
                     const isUploading = uploading === ex.id;
 
                     return (
-                      <div key={ex.id} className="flex items-center gap-4 px-5 py-4">
+                      <div key={ex.id} className="flex items-center gap-3 px-4 py-4 min-w-0">
                         {/* Thumbnail */}
                         <div className="w-16 h-12 bg-white/[0.06] rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                           {currentMedia ? (
