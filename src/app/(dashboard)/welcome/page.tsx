@@ -65,7 +65,7 @@ export default async function WelcomePage() {
         </div>
       </nav>
 
-      <div className="px-6 pt-7 pb-4">
+      <div className="px-4 pt-7 pb-4 w-full max-w-lg mx-auto">
 
         {/* Greeting */}
         <div className="mb-7">
