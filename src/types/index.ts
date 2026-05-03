@@ -26,7 +26,7 @@ export interface Exercise {
   defaultSets: number;
   defaultReps: string;
   notes?: string;
-  mediaUrl?: string;
+  mediaUrl?: string | null;
   lastLog?: WorkoutLog | null;
 }
 
