@@ -38,7 +38,7 @@ export default async function ProgressPage() {
       <div className="max-w-lg mx-auto px-5 pt-6">
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-7">
+        <div className="grid grid-cols-3 gap-2 mb-7">
           {[
             { label: 'Sessions', value: totalSessions },
             { label: 'Total Sets', value: totalSets },
