@@ -70,7 +70,7 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
         <div className="text-xs text-white/30">{exercisesWithLogs.length} exercises</div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-5">
+      <div className="w-full max-w-lg mx-auto px-4 pt-5 overflow-hidden">
         {exercisesWithLogs.map((ex, i) => (
           <div key={ex.id}>
             <div className="flex items-center gap-2 mb-3">
