@@ -160,7 +160,7 @@ export default function AdminProgramManager({ programs: initial }: Props) {
             className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 transition"
           />
 
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <label className={'flex-1 cursor-pointer rounded-xl border-2 p-3 text-center text-sm font-medium transition ' + (programType === 'primary' ? 'border-indigo-600 bg-indigo-500/10 text-indigo-400' : 'border-gray-200 text-gray-400 hover:border-gray-300')}>
               <input
                 type="radio"
