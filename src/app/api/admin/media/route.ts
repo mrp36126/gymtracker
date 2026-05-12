@@ -13,6 +13,8 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get('file') as File | null;
   const exerciseId = formData.get('exerciseId') as string | null;
+  const kind = formData.get('kind') as string | null;
+  const isDetail = kind === 'detail';
 
   if (!file || !exerciseId) {
     return NextResponse.json({ error: 'file and exerciseId are required' }, { status: 400 });
@@ -31,10 +33,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
   }
 
-  // Build filename from exercise name e.g. "Bench Press" -> "bench-press.jpg"
   const ext = file.name.split('.').pop();
   const safeName = exercise.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const filePath = `exercises/${safeName}-${exerciseId.slice(-6)}.${ext}`;
+  // Detail uploads use prefix detail-{slug}-… e.g. detail-bend-over-row-a1b2c3.jpg
+  const filePath = isDetail
+    ? `exercises/detail-${safeName}-${exerciseId.slice(-6)}.${ext}`
+    : `exercises/${safeName}-${exerciseId.slice(-6)}.${ext}`;
 
   // Upload to Supabase Storage
   const supabase = await createSupabaseServerClient();
@@ -51,8 +55,14 @@ export async function POST(req: NextRequest) {
   // Save URL to exercise record
   await prisma.exercise.update({
     where: { id: exerciseId },
-    data: { mediaUrl: urlData.publicUrl },
+    data: isDetail
+      ? { detailMediaUrl: urlData.publicUrl }
+      : { mediaUrl: urlData.publicUrl },
   });
 
-  return NextResponse.json({ data: { mediaUrl: urlData.publicUrl } }, { status: 201 });
+  return NextResponse.json({
+    data: isDetail
+      ? { detailMediaUrl: urlData.publicUrl }
+      : { mediaUrl: urlData.publicUrl },
+  }, { status: 201 });
 }

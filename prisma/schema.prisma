@@ -46,6 +46,7 @@ model Exercise {
   defaultReps String       @default("10-12")
   notes       String?
   mediaUrl    String?
+  detailMediaUrl String?
   programId   String
   program     Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
   workoutLogs WorkoutLog[]

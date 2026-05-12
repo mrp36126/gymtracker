@@ -27,6 +27,8 @@ export interface Exercise {
   defaultReps: string;
   notes?: string;
   mediaUrl?: string | null;
+  /** Full-screen technique sheet (separate from card thumbnail). */
+  detailMediaUrl?: string | null;
   lastLog?: WorkoutLog | null;
 }
 

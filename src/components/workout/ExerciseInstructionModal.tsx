@@ -10,12 +10,13 @@ type Props = {
   defaultSets: number;
   defaultReps: string;
   notes?: string;
-  mediaUrl: string;
+  /** Full-screen technique asset (detail sheet), not necessarily the card thumbnail. */
+  guideMediaUrl: string;
 };
 
 function isVideoUrl(url: string) {
-  const lower = url.split('?')[0]?.toLowerCase() ?? '';
-  return lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.webm');
+  const path = url.split('?')[0]?.toLowerCase() ?? '';
+  return /\.(mp4|mov|webm)$/i.test(path);
 }
 
 export default function ExerciseInstructionModal({
@@ -26,7 +27,7 @@ export default function ExerciseInstructionModal({
   defaultSets,
   defaultReps,
   notes,
-  mediaUrl,
+  guideMediaUrl,
 }: Props) {
   useEffect(() => {
     if (!open) return;
@@ -44,7 +45,7 @@ export default function ExerciseInstructionModal({
 
   if (!open) return null;
 
-  const video = isVideoUrl(mediaUrl);
+  const video = isVideoUrl(guideMediaUrl);
 
   return (
     <div
@@ -76,7 +77,7 @@ export default function ExerciseInstructionModal({
         <div className="w-full min-h-[40vh] bg-black flex items-center justify-center p-2">
           {video ? (
             <video
-              src={mediaUrl}
+              src={guideMediaUrl}
               className="max-h-[min(70vh,560px)] w-full max-w-3xl object-contain"
               controls
               playsInline
@@ -84,7 +85,7 @@ export default function ExerciseInstructionModal({
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={mediaUrl}
+              src={guideMediaUrl}
               alt={`${name} — technique`}
               className="max-h-[min(75vh,720px)] w-full max-w-3xl object-contain"
             />
