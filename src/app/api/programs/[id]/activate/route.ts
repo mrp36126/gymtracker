@@ -15,18 +15,16 @@ export async function POST(
 
   const { id } = await params;
 
-  // Find the program
-  const program = await prisma.program.findUnique({
-    where: { id },
+  const program = await prisma.program.findFirst({
+    where: { id, userId: user!.id },
   });
 
   if (!program) {
     return NextResponse.json({ error: 'Program not found' }, { status: 404 });
   }
 
-  // Deactivate all other programs first
   await prisma.program.updateMany({
-    where: { programType: program.programType },
+    where: { programType: program.programType, userId: user!.id },
     data: { isActive: false },
   });
 

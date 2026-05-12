@@ -24,8 +24,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Only images (JPG, PNG, GIF, WebP) and videos (MP4, MOV) are allowed' }, { status: 400 });
   }
 
-  // Get exercise to build a clean filename
-  const exercise = await prisma.exercise.findUnique({ where: { id: exerciseId } });
+  const exercise = await prisma.exercise.findFirst({
+    where: { id: exerciseId, program: { userId: user!.id } },
+  });
   if (!exercise) {
     return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
   }

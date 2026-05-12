@@ -16,7 +16,7 @@ export default async function SupplementaryProgramPage({
   const { id } = await params;
 
   const program = await prisma.program.findFirst({
-    where: { id, programType: 'supplementary', isActive: true },
+    where: { id, programType: 'supplementary', isActive: true, userId: user.id },
     include: {
       exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] },
     },

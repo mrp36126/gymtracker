@@ -9,6 +9,7 @@ export default async function ProgramPage() {
   if (!user) redirect('/login');
 
   const programs = await prisma.program.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: 'desc' },
   });
 

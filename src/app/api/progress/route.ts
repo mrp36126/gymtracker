@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { findExerciseForUser } from '@/lib/program-scope';
 
 // GET /api/progress?exerciseId=X
 export async function GET(req: NextRequest) {
@@ -10,6 +11,13 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const exerciseId = searchParams.get('exerciseId');
+
+  if (exerciseId) {
+    const ok = await findExerciseForUser(exerciseId, user!.id);
+    if (!ok) {
+      return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
+    }
+  }
 
   const where = { userId: user!.id, ...(exerciseId ? { exerciseId } : {}) };
 

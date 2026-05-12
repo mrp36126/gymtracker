@@ -12,7 +12,7 @@ export async function GET(
   const { id } = await params;
 
   const program = await prisma.program.findFirst({
-    where: { id },
+    where: { id, userId: user!.id },
     include: { exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] } },
   });
 
@@ -36,6 +36,13 @@ export async function PATCH(
     return NextResponse.json({ error: 'Name is required' }, { status: 400 });
   }
 
+  const existing = await prisma.program.findFirst({
+    where: { id, userId: user!.id },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const program = await prisma.program.update({
     where: { id },
     data: { name: name.trim() },
@@ -55,7 +62,9 @@ export async function DELETE(
 
   const { id } = await params;
 
-  const program = await prisma.program.findUnique({ where: { id } });
+  const program = await prisma.program.findFirst({
+    where: { id, userId: user!.id },
+  });
   if (!program) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (program.isActive) {
     return NextResponse.json({ error: 'Cannot delete the active program' }, { status: 400 });

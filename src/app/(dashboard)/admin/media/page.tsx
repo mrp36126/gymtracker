@@ -10,6 +10,7 @@ export default async function AdminMediaPage() {
   if (!user.isAdmin) redirect('/welcome');
 
   const programs = await prisma.program.findMany({
+    where: { userId: user.id },
     include: {
       exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] }
     },

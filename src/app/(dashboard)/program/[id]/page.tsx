@@ -10,7 +10,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
 
   const program = await prisma.program.findFirst({
-    where: { id },
+    where: { id, userId: user.id },
     include: { exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] } },
   });
 

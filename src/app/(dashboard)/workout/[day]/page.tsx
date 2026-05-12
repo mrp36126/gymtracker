@@ -12,7 +12,9 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
   const { day: rawDay } = await params;
   const day = rawDay.charAt(0).toUpperCase() + rawDay.slice(1);
 
-  const program = await prisma.program.findFirst({ where: { isActive: true, programType: 'primary' } });
+  const program = await prisma.program.findFirst({
+    where: { isActive: true, programType: 'primary', userId: user.id },
+  });
 
   if (!program) {
     return (

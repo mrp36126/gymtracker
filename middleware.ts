@@ -25,7 +25,9 @@ export async function middleware(request: NextRequest) {
   const isDashboardRoute = request.nextUrl.pathname.startsWith('/welcome')
     || request.nextUrl.pathname.startsWith('/program')
     || request.nextUrl.pathname.startsWith('/workout')
-    || request.nextUrl.pathname.startsWith('/progress');
+    || request.nextUrl.pathname.startsWith('/progress')
+    || request.nextUrl.pathname.startsWith('/admin')
+    || request.nextUrl.pathname.startsWith('/supplementary');
 
   if (!user && isDashboardRoute) {
     return NextResponse.redirect(new URL('/login', request.url));

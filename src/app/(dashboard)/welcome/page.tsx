@@ -29,7 +29,7 @@ export default async function WelcomePage() {
 
   try {
     activeProgram = await prisma.program.findFirst({
-      where: { isActive: true, programType: 'primary' },
+      where: { isActive: true, programType: 'primary', userId: user.id },
     });
 
     if (activeProgram) {
@@ -39,7 +39,7 @@ export default async function WelcomePage() {
     }
 
     supplementaryPrograms = await prisma.program.findMany({
-      where: { isActive: true, programType: 'supplementary' },
+      where: { isActive: true, programType: 'supplementary', userId: user.id },
       orderBy: { name: 'asc' },
     });
   } catch (err) {}

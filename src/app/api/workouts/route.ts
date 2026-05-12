@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getTodayName } from '@/lib/day-resolver';
+import { findExerciseForUser } from '@/lib/program-scope';
 import { z } from 'zod';
 
 // GET /api/workouts?programId=X&day=Monday
@@ -16,6 +17,13 @@ export async function GET(req: NextRequest) {
 
   if (!programId) {
     return NextResponse.json({ error: 'programId is required' }, { status: 400 });
+  }
+
+  const owned = await prisma.program.findFirst({
+    where: { id: programId, userId: user!.id },
+  });
+  if (!owned) {
+    return NextResponse.json({ error: 'Program not found' }, { status: 404 });
   }
 
   const exercises = await prisma.exercise.findMany({
@@ -50,7 +58,20 @@ export async function POST(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
 
-  const body = LogSchema.parse(await req.json());
+  let body: z.infer<typeof LogSchema>;
+  try {
+    body = LogSchema.parse(await req.json());
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: err.flatten() }, { status: 422 });
+    }
+    throw err;
+  }
+
+  const exerciseOk = await findExerciseForUser(body.exerciseId, user!.id);
+  if (!exerciseOk) {
+    return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
+  }
 
   const log = await prisma.workoutLog.create({
     data: {
