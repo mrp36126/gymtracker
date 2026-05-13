@@ -29,7 +29,7 @@ export default async function AdminMediaPage() {
 
       <div className="max-w-2xl mx-auto px-5 pt-6">
         <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-4">
-          Upload images or videos for each exercise
+          Upload card media and the separate full-screen detail image for each exercise
         </p>
         <MediaManager programs={programs} />
       </div>

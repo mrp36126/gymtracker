@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { Exercise, WorkoutLog } from '@/types';
 import SetLogger from './SetLogger';
 import ExerciseInstructionModal from './ExerciseInstructionModal';
+import ExerciseDetailImageModal from './ExerciseDetailImageModal';
 
 interface Props { exercise: Exercise; }
 
@@ -10,6 +11,7 @@ export default function ExerciseCard({ exercise }: Props) {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
   const [completedSets, setCompletedSets] = useState(0);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [detailImageOpen, setDetailImageOpen] = useState(false);
 
   const handleSetComplete = (log: WorkoutLog) => {
     setCompletedSets(prev => prev + 1);
@@ -17,6 +19,7 @@ export default function ExerciseCard({ exercise }: Props) {
   };
 
   const mediaUrl = exercise.mediaUrl ?? '';
+  const detailImageUrl = exercise.detailImageUrl ?? '';
   const mediaPath = mediaUrl.split('?')[0] ?? '';
   const isVideo = /\.(mp4|mov|webm)$/i.test(mediaPath);
 
@@ -33,6 +36,14 @@ export default function ExerciseCard({ exercise }: Props) {
           defaultReps={exercise.defaultReps}
           notes={exercise.notes}
           mediaUrl={mediaUrl}
+        />
+      ) : null}
+      {detailImageUrl ? (
+        <ExerciseDetailImageModal
+          open={detailImageOpen}
+          onClose={() => setDetailImageOpen(false)}
+          name={exercise.name}
+          imageUrl={detailImageUrl}
         />
       ) : null}
 
@@ -56,9 +67,9 @@ export default function ExerciseCard({ exercise }: Props) {
           ) : (
             <button
               type="button"
-              onClick={() => setGuideOpen(true)}
+              onClick={() => detailImageUrl ? setDetailImageOpen(true) : setGuideOpen(true)}
               className="relative block w-full h-full min-h-[160px] group cursor-zoom-in text-left touch-manipulation"
-              aria-label={`Open technique guide for ${exercise.name}`}
+              aria-label={detailImageUrl ? `Open detailed full-screen image for ${exercise.name}` : `Open technique guide for ${exercise.name}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={mediaUrl} alt="" className="w-full h-full object-cover min-h-[160px]" />
@@ -67,7 +78,7 @@ export default function ExerciseCard({ exercise }: Props) {
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                   <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
                 </svg>
-                Technique guide
+                {detailImageUrl ? 'View details' : 'Technique guide'}
               </span>
             </button>
           )

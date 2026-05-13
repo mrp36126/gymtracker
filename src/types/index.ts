@@ -27,6 +27,7 @@ export interface Exercise {
   defaultReps: string;
   notes?: string;
   mediaUrl?: string | null;
+  detailImageUrl?: string | null;
   lastLog?: WorkoutLog | null;
 }
 
