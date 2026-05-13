@@ -48,11 +48,11 @@ export default function ExerciseCard({ exercise }: Props) {
       ) : null}
 
       {/* Media */}
-      <div className="relative w-full bg-[#12121A] overflow-hidden" style={{ aspectRatio: '16/9' }}>
+      <div className="relative w-full min-h-[160px] bg-[#12121A] overflow-hidden" style={{ aspectRatio: '16/9' }}>
         {mediaUrl ? (
           isVideo ? (
             <>
-              <video src={mediaUrl} className="w-full h-full object-cover" controls muted loop playsInline />
+              <video src={mediaUrl} className="w-full h-full object-contain" controls muted loop playsInline />
               <button
                 type="button"
                 onClick={() => setGuideOpen(true)}
@@ -68,11 +68,11 @@ export default function ExerciseCard({ exercise }: Props) {
             <button
               type="button"
               onClick={() => detailImageUrl ? setDetailImageOpen(true) : setGuideOpen(true)}
-              className="relative block w-full h-full min-h-[160px] group cursor-zoom-in text-left touch-manipulation"
+              className="relative block w-full h-full group cursor-zoom-in text-left touch-manipulation"
               aria-label={detailImageUrl ? `Open detailed full-screen image for ${exercise.name}` : `Open technique guide for ${exercise.name}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={mediaUrl} alt="" className="w-full h-full object-cover min-h-[160px]" />
+              <img src={mediaUrl} alt="" className="w-full h-full object-contain" />
               <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-90 group-active:opacity-100 transition" />
               <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-600 text-white text-[11px] font-bold uppercase tracking-wide shadow-lg shadow-indigo-900/40">
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">

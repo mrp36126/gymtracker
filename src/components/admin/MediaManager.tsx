@@ -120,10 +120,10 @@ export default function MediaManager({ programs }: Props) {
                           <div className="w-14 h-10 bg-white/[0.06] rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                             {currentMedia ? (
                               isVideo ? (
-                                <video src={currentMedia} className="w-full h-full object-cover" muted />
+                                <video src={currentMedia} className="w-full h-full object-contain" muted />
                               ) : (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={currentMedia} alt={ex.name} className="w-full h-full object-cover" />
+                                <img src={currentMedia} alt={ex.name} className="w-full h-full object-contain" />
                               )
                             ) : (
                               <svg width="16" height="16" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" viewBox="0 0 24 24">
