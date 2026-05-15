@@ -99,17 +99,17 @@ export default async function WelcomePage() {
         ) : (
           <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6 mb-4">
             <p className="text-lg font-bold text-white mb-4">
-              Welcome to the app, and thank you for joining our fitness community! ??
+              Welcome to the best gym app, and thank you for joining our fitness community!
             </p>
 
             <div className="space-y-4 text-sm leading-6 text-white/60">
               <p>
-                Your account has been successfully created and you?re all set to begin your journey.
+                Your account has been successfully created and you are all set to begin your journey.
                 At the moment, your workout program has not yet been assigned by the administrator.
               </p>
 
               <div>
-                <p className="mb-2">Once your program has been loaded, you?ll be able to:</p>
+                <p className="mb-2">Once your program has been loaded, you will be able to:</p>
                 <ul className="space-y-1 list-disc pl-5">
                   <li>View your personalized workout plan</li>
                   <li>Track your progress and performance</li>
@@ -119,12 +119,12 @@ export default async function WelcomePage() {
               </div>
 
               <p>
-                We?re preparing everything for you behind the scenes, so please check back soon.
+                We are preparing everything for you behind the scenes, so please check back soon.
                 If you believe there has been a delay, feel free to contact your administrator for assistance.
               </p>
 
               <p>
-                We?re excited to be part of your fitness journey ? let?s achieve great results together! ??
+                We are excited to be part of your fitness journey. Believe in yourself and you will achieve great results.
               </p>
             </div>
           </div>
