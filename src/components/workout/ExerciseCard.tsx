@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { Exercise, WorkoutLog } from '@/types';
 import SetLogger from './SetLogger';
 import ExerciseInstructionModal from './ExerciseInstructionModal';
+import ExerciseDetailImageModal from './ExerciseDetailImageModal';
 
 interface Props { exercise: Exercise; }
 
@@ -10,6 +11,7 @@ export default function ExerciseCard({ exercise }: Props) {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
   const [completedSets, setCompletedSets] = useState(0);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [detailImageOpen, setDetailImageOpen] = useState(false);
 
   const handleSetComplete = (log: WorkoutLog) => {
     setCompletedSets(prev => prev + 1);
@@ -17,6 +19,7 @@ export default function ExerciseCard({ exercise }: Props) {
   };
 
   const mediaUrl = exercise.mediaUrl ?? '';
+  const detailImageUrl = exercise.detailImageUrl ?? '';
   const mediaPath = mediaUrl.split('?')[0] ?? '';
   const isVideo = /\.(mp4|mov|webm)$/i.test(mediaPath);
 
@@ -35,13 +38,21 @@ export default function ExerciseCard({ exercise }: Props) {
           mediaUrl={mediaUrl}
         />
       ) : null}
+      {detailImageUrl ? (
+        <ExerciseDetailImageModal
+          open={detailImageOpen}
+          onClose={() => setDetailImageOpen(false)}
+          name={exercise.name}
+          imageUrl={detailImageUrl}
+        />
+      ) : null}
 
       {/* Media */}
-      <div className="relative w-full bg-[#12121A] overflow-hidden" style={{ aspectRatio: '16/9' }}>
+      <div className="relative w-full min-h-[160px] bg-[#12121A] overflow-hidden" style={{ aspectRatio: '16/9' }}>
         {mediaUrl ? (
           isVideo ? (
             <>
-              <video src={mediaUrl} className="w-full h-full object-cover" controls muted loop playsInline />
+              <video src={mediaUrl} className="w-full h-full object-contain" controls muted loop playsInline />
               <button
                 type="button"
                 onClick={() => setGuideOpen(true)}
@@ -56,18 +67,18 @@ export default function ExerciseCard({ exercise }: Props) {
           ) : (
             <button
               type="button"
-              onClick={() => setGuideOpen(true)}
-              className="relative block w-full h-full min-h-[160px] group cursor-zoom-in text-left touch-manipulation"
-              aria-label={`Open technique guide for ${exercise.name}`}
+              onClick={() => detailImageUrl ? setDetailImageOpen(true) : setGuideOpen(true)}
+              className="relative block w-full h-full group cursor-zoom-in text-left touch-manipulation"
+              aria-label={detailImageUrl ? `Open detailed full-screen image for ${exercise.name}` : `Open technique guide for ${exercise.name}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={mediaUrl} alt="" className="w-full h-full object-cover min-h-[160px]" />
+              <img src={mediaUrl} alt="" className="w-full h-full object-contain" />
               <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-90 group-active:opacity-100 transition" />
               <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-600 text-white text-[11px] font-bold uppercase tracking-wide shadow-lg shadow-indigo-900/40">
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                   <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
                 </svg>
-                Technique guide
+                {detailImageUrl ? 'View details' : 'Technique guide'}
               </span>
             </button>
           )

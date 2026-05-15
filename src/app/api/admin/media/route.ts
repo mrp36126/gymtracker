@@ -13,15 +13,21 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get('file') as File | null;
   const exerciseId = formData.get('exerciseId') as string | null;
+  const mediaKind = formData.get('mediaKind') === 'detail' ? 'detail' : 'card';
 
   if (!file || !exerciseId) {
     return NextResponse.json({ error: 'file and exerciseId are required' }, { status: 400 });
   }
 
   // Validate file type
-  const allowed = ['image/jpeg','image/png','image/gif','image/webp','video/mp4','video/quicktime'];
+  const imageTypes = ['image/jpeg','image/png','image/gif','image/webp'];
+  const videoTypes = ['video/mp4','video/quicktime'];
+  const allowed = mediaKind === 'detail' ? imageTypes : [...imageTypes, ...videoTypes];
   if (!allowed.includes(file.type)) {
-    return NextResponse.json({ error: 'Only images (JPG, PNG, GIF, WebP) and videos (MP4, MOV) are allowed' }, { status: 400 });
+    const message = mediaKind === 'detail'
+      ? 'Only images (JPG, PNG, GIF, WebP) are allowed for detail images'
+      : 'Only images (JPG, PNG, GIF, WebP) and videos (MP4, MOV) are allowed';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const exercise = await prisma.exercise.findFirst({
@@ -34,7 +40,9 @@ export async function POST(req: NextRequest) {
   // Build filename from exercise name e.g. "Bench Press" -> "bench-press.jpg"
   const ext = file.name.split('.').pop();
   const safeName = exercise.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const filePath = `exercises/${safeName}-${exerciseId.slice(-6)}.${ext}`;
+  const folder = mediaKind === 'detail' ? 'exercise-details' : 'exercises';
+  const suffix = mediaKind === 'detail' ? 'detail' : 'media';
+  const filePath = `${folder}/${safeName}-${exerciseId.slice(-6)}-${suffix}.${ext}`;
 
   // Upload to Supabase Storage
   const supabase = await createSupabaseServerClient();
@@ -49,10 +57,14 @@ export async function POST(req: NextRequest) {
   const { data: urlData } = supabase.storage.from('gymtracker').getPublicUrl(filePath);
 
   // Save URL to exercise record
+  const data = mediaKind === 'detail'
+    ? { detailImageUrl: urlData.publicUrl }
+    : { mediaUrl: urlData.publicUrl };
+
   await prisma.exercise.update({
     where: { id: exerciseId },
-    data: { mediaUrl: urlData.publicUrl },
+    data,
   });
 
-  return NextResponse.json({ data: { mediaUrl: urlData.publicUrl } }, { status: 201 });
+  return NextResponse.json({ data }, { status: 201 });
 }

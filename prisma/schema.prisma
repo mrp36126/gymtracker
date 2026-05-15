@@ -18,6 +18,7 @@ model User {
   updatedAt   DateTime     @updatedAt
   programs    Program[]
   workoutLogs WorkoutLog[]
+
   @@map("users")
 }
 
@@ -33,23 +34,26 @@ model Program {
   exercises   Exercise[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
   @@map("programs")
 }
 
 model Exercise {
-  id          String       @id @default(cuid())
-  name        String
-  muscleGroup String
-  day         String
-  order       Int
-  defaultSets Int          @default(3)
-  defaultReps String       @default("10-12")
-  notes       String?
-  mediaUrl    String?
-  programId   String
-  program     Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
-  workoutLogs WorkoutLog[]
-  createdAt   DateTime     @default(now())
+  id             String       @id @default(cuid())
+  name           String
+  muscleGroup    String
+  day            String
+  order          Int
+  defaultSets    Int          @default(3)
+  defaultReps    String       @default("10-12")
+  notes          String?
+  mediaUrl       String?
+  detailImageUrl String?
+  programId      String
+  program        Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  workoutLogs    WorkoutLog[]
+  createdAt      DateTime     @default(now())
+
   @@index([programId, day])
   @@map("exercises")
 }
@@ -65,6 +69,7 @@ model WorkoutLog {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   exerciseId String
   exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
   @@index([userId, exerciseId, loggedAt(sort: Desc)])
   @@map("workout_logs")
 }
