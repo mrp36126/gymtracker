@@ -20,7 +20,13 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data: { user: u }, error } = await supabase.auth.getUser();
+    if (!error && u) user = u;
+  } catch {
+    // ignore
+  }
 
   const isDashboardRoute = request.nextUrl.pathname.startsWith('/welcome')
     || request.nextUrl.pathname.startsWith('/program')

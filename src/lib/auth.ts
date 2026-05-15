@@ -3,14 +3,18 @@ import { prisma } from './prisma';
 import { NextResponse } from 'next/server';
 
 export async function getAuthUser() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return null;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return null;
 
-  const dbUser = await prisma.user.findUnique({
-    where: { supabaseId: user.id },
-  });
-  return dbUser;
+    const dbUser = await prisma.user.findUnique({
+      where: { supabaseId: user.id },
+    });
+    return dbUser;
+  } catch {
+    return null;
+  }
 }
 
 export async function requireAuth() {

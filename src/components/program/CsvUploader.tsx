@@ -19,6 +19,10 @@ export default function CsvUploader() {
 
     try {
       const res  = await fetch('/api/programs', { method: 'POST', body: fd });
+      if (res.status === 401) {
+        setError('You have been signed out. Please sign in again.');
+        return;
+      }
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       router.push(`/program/${json.data.id}`);

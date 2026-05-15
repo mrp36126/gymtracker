@@ -57,6 +57,10 @@ export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLo
           reps: parseInt(setRow.reps),
         }),
       });
+      if (res.status === 401) {
+        setError('You have been signed out. Please sign in again.');
+        return;
+      }
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setSets(prev => prev.map(s =>
