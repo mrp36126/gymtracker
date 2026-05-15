@@ -31,7 +31,10 @@ export async function DELETE(
   const supabaseAdmin = createSupabaseAdminClient();
   const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUser.supabaseId, false);
 
-  if (authDeleteError) {
+  const authUserAlreadyMissing =
+    authDeleteError?.message.toLowerCase().includes('user not found');
+
+  if (authDeleteError && !authUserAlreadyMissing) {
     return NextResponse.json({ error: authDeleteError.message }, { status: 400 });
   }
 
