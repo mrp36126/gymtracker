@@ -37,6 +37,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
   const [editingId, setEditingId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<Record<string, string>>({});
   const [editName, setEditName] = useState('');
   const [newName, setNewName] = useState('');
@@ -192,6 +193,30 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
       setError(e.message);
     } finally {
       setUpdatingRole(null);
+    }
+  };
+
+  const handleDeleteUser = async (targetUser: AssignableUser) => {
+    if (!confirm(
+      'Delete "' + targetUser.name + '"? This will permanently remove their account, programs, workout history, and app data. They will need to register again to use the app.'
+    )) return;
+
+    setDeletingUser(targetUser.id);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/users/' + targetUser.id, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+
+      setManagedUsers(prev => prev.filter(user => user.id !== targetUser.id));
+      setPendingUsers(prev => prev.filter(user => user.id !== targetUser.id));
+      showSuccess(targetUser.name + ' was deleted.');
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setDeletingUser(null);
     }
   };
 
@@ -399,22 +424,31 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                 </div>
                 <p className="text-xs text-white/40 mt-1">{user.email}</p>
               </div>
-              <button
-                onClick={() => handleRoleChange(user, !user.isAdmin)}
-                disabled={updatingRole === user.id}
-                className={
-                  'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
-                  (user.isAdmin
-                    ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                    : 'bg-cyan-600 text-white hover:bg-cyan-700')
-                }
-              >
-                {updatingRole === user.id
-                  ? 'Updating...'
-                  : user.isAdmin
-                    ? 'Remove Admin'
-                    : 'Make Admin'}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleRoleChange(user, !user.isAdmin)}
+                  disabled={updatingRole === user.id || deletingUser === user.id}
+                  className={
+                    'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
+                    (user.isAdmin
+                      ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                      : 'bg-cyan-600 text-white hover:bg-cyan-700')
+                  }
+                >
+                  {updatingRole === user.id
+                    ? 'Updating...'
+                    : user.isAdmin
+                      ? 'Remove Admin'
+                      : 'Make Admin'}
+                </button>
+                <button
+                  onClick={() => handleDeleteUser(user)}
+                  disabled={deletingUser === user.id || updatingRole === user.id}
+                  className="text-xs bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+                >
+                  {deletingUser === user.id ? 'Deleting...' : 'Delete User'}
+                </button>
+              </div>
             </div>
           ))}
         </div>
