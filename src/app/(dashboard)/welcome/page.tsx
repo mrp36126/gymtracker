@@ -89,14 +89,44 @@ export default async function WelcomePage() {
               <div className="absolute right-6 top-1/2 -translate-y-1/2 text-white/40 text-2xl">→</div>
             </div>
           </Link>
-        ) : (
+        ) : user.isAdmin ? (
           <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6 mb-4 text-center">
             <p className="text-white/40 text-sm">No active program</p>
-            {user.isAdmin && (
-              <Link href="/admin" className="text-indigo-400 text-sm mt-1 inline-block hover:text-indigo-300 transition">
-                Go to Admin to activate one →
-              </Link>
-            )}
+            <Link href="/admin" className="text-indigo-400 text-sm mt-1 inline-block hover:text-indigo-300 transition">
+              Go to Admin to activate one ?
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6 mb-4">
+            <p className="text-lg font-bold text-white mb-4">
+              Welcome to the app, and thank you for joining our fitness community! ??
+            </p>
+
+            <div className="space-y-4 text-sm leading-6 text-white/60">
+              <p>
+                Your account has been successfully created and you?re all set to begin your journey.
+                At the moment, your workout program has not yet been assigned by the administrator.
+              </p>
+
+              <div>
+                <p className="mb-2">Once your program has been loaded, you?ll be able to:</p>
+                <ul className="space-y-1 list-disc pl-5">
+                  <li>View your personalized workout plan</li>
+                  <li>Track your progress and performance</li>
+                  <li>Log your workouts and achievements</li>
+                  <li>Stay motivated with your fitness goals</li>
+                </ul>
+              </div>
+
+              <p>
+                We?re preparing everything for you behind the scenes, so please check back soon.
+                If you believe there has been a delay, feel free to contact your administrator for assistance.
+              </p>
+
+              <p>
+                We?re excited to be part of your fitness journey ? let?s achieve great results together! ??
+              </p>
+            </div>
           </div>
         )}
 
