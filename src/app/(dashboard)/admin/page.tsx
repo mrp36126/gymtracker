@@ -17,8 +17,22 @@ export default async function AdminPage() {
 
   const users = await prisma.user.findMany({
     where: { id: { not: user.id } },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, isAdmin: true },
     orderBy: [{ name: 'asc' }, { email: 'asc' }],
+  });
+
+  const waitingUsers = await prisma.user.findMany({
+    where: {
+      id: { not: user.id },
+      programs: {
+        none: {
+          isActive: true,
+          programType: 'primary',
+        },
+      },
+    },
+    select: { id: true, name: true, email: true, isAdmin: true },
+    orderBy: [{ createdAt: 'asc' }],
   });
 
   return (
@@ -51,8 +65,9 @@ export default async function AdminPage() {
           </Link>
         </div>
 
-        <AdminProgramManager programs={programs} users={users} />
+        <AdminProgramManager programs={programs} users={users} waitingUsers={waitingUsers} />
       </div>
     </main>
   );
 }
+

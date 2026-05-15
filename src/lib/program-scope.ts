@@ -11,3 +11,9 @@ export function findExerciseForUser(exerciseId: string, userId: string) {
     where: { id: exerciseId, program: { userId } },
   });
 }
+
+export function findActivePrimaryProgramForUser(userId: string) {
+  return prisma.program.findFirst({
+    where: { userId, isActive: true, programType: 'primary' },
+  });
+}

@@ -2,12 +2,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { findExerciseForUser } from '@/lib/program-scope';
+import { findActivePrimaryProgramForUser, findExerciseForUser } from '@/lib/program-scope';
 
 // GET /api/progress?exerciseId=X
 export async function GET(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
+
+  if (!user!.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
+    if (!activePrimaryProgram) {
+      return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
+    }
+  }
 
   const { searchParams } = new URL(req.url);
   const exerciseId = searchParams.get('exerciseId');

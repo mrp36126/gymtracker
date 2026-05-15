@@ -3,10 +3,16 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import ProgressClient from '@/components/progress/ProgressClient';
+import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 
 export default async function ProgressPage() {
   const user = await getAuthUser();
   if (!user) redirect('/login');
+
+  if (!user.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);
+    if (!activePrimaryProgram) redirect('/welcome');
+  }
 
   const logs = await prisma.workoutLog.findMany({
     where: { userId: user.id },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 
 // GET single program
 export async function GET(
@@ -9,6 +10,12 @@ export async function GET(
 ) {
   const { user, response } = await requireAuth();
   if (response) return response;
+  if (!user!.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
+    if (!activePrimaryProgram) {
+      return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
+    }
+  }
   const { id } = await params;
 
   const program = await prisma.program.findFirst({

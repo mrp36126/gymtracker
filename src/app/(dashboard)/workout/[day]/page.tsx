@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import ExerciseCard from '@/components/workout/ExerciseCard';
 import type { Exercise } from '@/types';
 import Link from 'next/link';
+import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 
 export default async function WorkoutDayPage({ params }: { params: Promise<{ day: string }> }) {
   const user = await getAuthUser();
@@ -12,11 +13,10 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
   const { day: rawDay } = await params;
   const day = rawDay.charAt(0).toUpperCase() + rawDay.slice(1);
 
-  const program = await prisma.program.findFirst({
-    where: { isActive: true, programType: 'primary', userId: user.id },
-  });
+  const program = await findActivePrimaryProgramForUser(user.id);
 
   if (!program) {
+    if (!user.isAdmin) redirect('/welcome');
     return (
       <main className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6">
         <div className="text-center">

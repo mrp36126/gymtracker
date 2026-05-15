@@ -17,21 +17,26 @@ interface AssignableUser {
   id: string;
   name: string;
   email: string;
+  isAdmin?: boolean;
 }
 
 interface Props {
   programs: Program[];
   users: AssignableUser[];
+  waitingUsers: AssignableUser[];
 }
 
-export default function AdminProgramManager({ programs: initial, users }: Props) {
+export default function AdminProgramManager({ programs: initial, users, waitingUsers }: Props) {
   const router = useRouter();
   const [programs, setPrograms] = useState(initial);
+  const [managedUsers, setManagedUsers] = useState(users);
+  const [pendingUsers, setPendingUsers] = useState(waitingUsers);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activating, setActivating] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<string | null>(null);
+  const [updatingRole, setUpdatingRole] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<Record<string, string>>({});
   const [editName, setEditName] = useState('');
   const [newName, setNewName] = useState('');
@@ -131,8 +136,8 @@ export default function AdminProgramManager({ programs: initial, users }: Props)
     }
   };
 
-  const handleAssign = async (program: Program) => {
-    const targetUserId = selectedUsers[program.id];
+  const handleAssign = async (program: Program, explicitTargetUserId?: string) => {
+    const targetUserId = explicitTargetUserId ?? selectedUsers[program.id];
     if (!targetUserId) {
       setError('Please choose a user before assigning this program');
       return;
@@ -152,7 +157,10 @@ export default function AdminProgramManager({ programs: initial, users }: Props)
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
 
-      const assignedUser = users.find(user => user.id === targetUserId);
+      const assignedUser = managedUsers.find(user => user.id === targetUserId);
+      if (program.programType === 'primary') {
+        setPendingUsers(prev => prev.filter(user => user.id !== targetUserId));
+      }
       showSuccess(
         '"' + program.name + '" assigned to ' +
         (assignedUser ? `${assignedUser.name} (${assignedUser.email})` : 'selected user') +
@@ -162,6 +170,28 @@ export default function AdminProgramManager({ programs: initial, users }: Props)
       setError(e.message);
     } finally {
       setAssigning(null);
+    }
+  };
+
+  const handleRoleChange = async (targetUser: AssignableUser, isAdmin: boolean) => {
+    setUpdatingRole(targetUser.id);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/users/' + targetUser.id + '/role', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAdmin }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      setManagedUsers(prev => prev.map(user =>
+        user.id === targetUser.id ? { ...user, isAdmin } : user
+      ));
+      showSuccess(targetUser.name + (isAdmin ? ' is now an admin.' : ' is no longer an admin.'));
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setUpdatingRole(null);
     }
   };
 
@@ -181,6 +211,44 @@ export default function AdminProgramManager({ programs: initial, users }: Props)
           {success}
         </div>
       )}
+
+      <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold tracking-widest text-amber-300/70 uppercase mb-2">
+              Waiting for Assignment
+            </p>
+            <p className="text-lg font-bold text-white">
+              {pendingUsers.length} user{pendingUsers.length === 1 ? '' : 's'} waiting for program assignment
+            </p>
+          </div>
+          <div className="min-w-10 h-10 rounded-full bg-amber-400/10 border border-amber-300/20 flex items-center justify-center text-amber-300 font-bold">
+            {pendingUsers.length}
+          </div>
+        </div>
+
+        {pendingUsers.length === 0 ? (
+          <p className="text-sm text-white/45 mt-3">
+            Everyone currently has an active primary program.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-2">
+            {pendingUsers.map(waitingUser => (
+              <a
+                key={waitingUser.id}
+                href={`#assign-${waitingUser.id}`}
+                className="bg-white/[0.03] border border-white/[0.05] rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 hover:border-amber-300/30 hover:bg-white/[0.05] transition"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-white">{waitingUser.name}</p>
+                  <p className="text-xs text-white/40">{waitingUser.email}</p>
+                </div>
+                <p className="text-xs font-semibold text-amber-300">Assign program →</p>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Upload new program */}
       <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
@@ -258,6 +326,100 @@ export default function AdminProgramManager({ programs: initial, users }: Props)
         </div>
       </div>
 
+      {pendingUsers.length > 0 && (
+        <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-5 py-3">
+            <h2 className="text-white font-bold text-sm">Quick Assign</h2>
+          </div>
+          <div className="p-5 space-y-3">
+            {pendingUsers.map(waitingUser => (
+              <div
+                key={waitingUser.id}
+                id={`assign-${waitingUser.id}`}
+                className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 scroll-mt-24"
+              >
+                <div className="mb-3">
+                  <p className="text-sm font-bold text-white">{waitingUser.name}</p>
+                  <p className="text-xs text-white/40">{waitingUser.email}</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <select
+                    value={selectedUsers[`quick-${waitingUser.id}`] ?? ''}
+                    onChange={e => setSelectedUsers(prev => ({
+                      ...prev,
+                      [`quick-${waitingUser.id}`]: e.target.value,
+                    }))}
+                    className="bg-white/[0.06] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition"
+                  >
+                    <option value="">Choose a program</option>
+                    {programs.map(program => (
+                      <option key={program.id} value={program.id}>
+                        {program.name} ({program.programType})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      const selectedProgram = programs.find(program => program.id === selectedUsers[`quick-${waitingUser.id}`]);
+                      if (!selectedProgram) {
+                        setError('Please choose a program before assigning it');
+                        return;
+                      }
+                      setSelectedUsers(prev => ({ ...prev, [selectedProgram.id]: waitingUser.id }));
+                      handleAssign(selectedProgram, waitingUser.id);
+                    }}
+                    disabled={!selectedUsers[`quick-${waitingUser.id}`]}
+                    className="text-xs bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition"
+                  >
+                    Assign Program
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div className="bg-cyan-600/20 border-b border-cyan-500/20 px-5 py-3 flex items-center justify-between">
+          <h2 className="text-white font-bold text-sm">User Admin Access</h2>
+          <span className="text-cyan-300/60 text-xs">{managedUsers.length} user{managedUsers.length === 1 ? '' : 's'}</span>
+        </div>
+        <div className="divide-y divide-white/[0.04]">
+          {managedUsers.map(user => (
+            <div key={user.id} className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-white">{user.name}</p>
+                  {user.isAdmin && (
+                    <span className="text-[10px] font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
+                      Admin
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-white/40 mt-1">{user.email}</p>
+              </div>
+              <button
+                onClick={() => handleRoleChange(user, !user.isAdmin)}
+                disabled={updatingRole === user.id}
+                className={
+                  'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
+                  (user.isAdmin
+                    ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                    : 'bg-cyan-600 text-white hover:bg-cyan-700')
+                }
+              >
+                {updatingRole === user.id
+                  ? 'Updating...'
+                  : user.isAdmin
+                    ? 'Remove Admin'
+                    : 'Make Admin'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Primary Programs */}
       <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="bg-indigo-600/20 border-b border-indigo-500/20 px-5 py-3 flex items-center justify-between">
@@ -284,7 +446,7 @@ export default function AdminProgramManager({ programs: initial, users }: Props)
                 onRename={handleRename}
                 onActivate={handleActivate}
                 onDelete={handleDelete}
-                users={users}
+                users={managedUsers}
                 selectedUserId={selectedUsers[program.id] ?? ''}
                 assigning={assigning}
                 onSelectUser={(userId) => setSelectedUsers(prev => ({ ...prev, [program.id]: userId }))}
@@ -321,7 +483,7 @@ export default function AdminProgramManager({ programs: initial, users }: Props)
                 onRename={handleRename}
                 onActivate={handleActivate}
                 onDelete={handleDelete}
-                users={users}
+                users={managedUsers}
                 selectedUserId={selectedUsers[program.id] ?? ''}
                 assigning={assigning}
                 onSelectUser={(userId) => setSelectedUsers(prev => ({ ...prev, [program.id]: userId }))}
@@ -351,7 +513,7 @@ interface RowProps {
   selectedUserId: string;
   assigning: string | null;
   onSelectUser: (userId: string) => void;
-  onAssign: (program: Program) => void;
+  onAssign: (program: Program, explicitTargetUserId?: string) => void;
 }
 
 function ProgramRow({
@@ -480,3 +642,4 @@ function ProgramRow({
     </div>
   );
 }
+

@@ -3,13 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getTodayName } from '@/lib/day-resolver';
-import { findExerciseForUser } from '@/lib/program-scope';
+import { findActivePrimaryProgramForUser, findExerciseForUser } from '@/lib/program-scope';
 import { z } from 'zod';
 
 // GET /api/workouts?programId=X&day=Monday
 export async function GET(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
+
+  if (!user!.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
+    if (!activePrimaryProgram) {
+      return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
+    }
+  }
 
   const { searchParams } = new URL(req.url);
   const programId = searchParams.get('programId');
@@ -57,6 +64,13 @@ const LogSchema = z.object({
 export async function POST(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
+
+  if (!user!.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
+    if (!activePrimaryProgram) {
+      return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
+    }
+  }
 
   let body: z.infer<typeof LogSchema>;
   try {

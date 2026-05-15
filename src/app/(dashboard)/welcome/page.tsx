@@ -123,20 +123,22 @@ export default async function WelcomePage() {
         )}
 
         {/* Stats row */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <Link href="/progress" className="block">
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
-              <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
-              <p className="text-lg font-extrabold text-white">View Charts</p>
-            </div>
-          </Link>
-          <Link href="/program" className="block">
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
-              <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Program</p>
-              <p className="text-lg font-extrabold text-white">View Plan</p>
-            </div>
-          </Link>
-        </div>
+        {(activeProgram || user.isAdmin) && (
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <Link href="/progress" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
+                <p className="text-lg font-extrabold text-white">View Charts</p>
+              </div>
+            </Link>
+            <Link href="/program" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Program</p>
+                <p className="text-lg font-extrabold text-white">View Plan</p>
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* Admin */}
         {user.isAdmin && (

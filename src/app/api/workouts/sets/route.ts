@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { findExerciseForUser } from '@/lib/program-scope';
+import { findActivePrimaryProgramForUser, findExerciseForUser } from '@/lib/program-scope';
 import { z } from 'zod';
 
 const SetSchema = z.object({
@@ -14,6 +14,13 @@ const SetSchema = z.object({
 export async function POST(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
+
+  if (!user!.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
+    if (!activePrimaryProgram) {
+      return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
+    }
+  }
 
   let body: z.infer<typeof SetSchema>;
   try {

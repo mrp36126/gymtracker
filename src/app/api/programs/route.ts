@@ -3,10 +3,18 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { parseProgramCsv } from '@/lib/csv-parser';
 import { createSupabaseServerClient } from '@/lib/supabase';
+import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 
 export async function GET() {
   const { user, response } = await requireAuth();
   if (response) return response;
+
+  if (!user!.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
+    if (!activePrimaryProgram) {
+      return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
+    }
+  }
 
   const programs = await prisma.program.findMany({
     where: { userId: user!.id },

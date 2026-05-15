@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import ExerciseCard from '@/components/workout/ExerciseCard';
 import type { Exercise } from '@/types';
 import Link from 'next/link';
+import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 
 export default async function SupplementaryProgramPage({
   params,
@@ -12,6 +13,11 @@ export default async function SupplementaryProgramPage({
 }) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
+
+  if (!user.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);
+    if (!activePrimaryProgram) redirect('/welcome');
+  }
 
   const { id } = await params;
 

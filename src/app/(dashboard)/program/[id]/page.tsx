@@ -2,10 +2,16 @@ import { getAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 
 export default async function ProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
+
+  if (!user.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);
+    if (!activePrimaryProgram) redirect('/welcome');
+  }
 
   const { id } = await params;
 
