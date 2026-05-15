@@ -13,15 +13,26 @@ interface Program {
   _count: { exercises: number };
 }
 
-interface Props { programs: Program[]; }
+interface AssignableUser {
+  id: string;
+  name: string;
+  email: string;
+}
 
-export default function AdminProgramManager({ programs: initial }: Props) {
+interface Props {
+  programs: Program[];
+  users: AssignableUser[];
+}
+
+export default function AdminProgramManager({ programs: initial, users }: Props) {
   const router = useRouter();
   const [programs, setPrograms] = useState(initial);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activating, setActivating] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState<string | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<Record<string, string>>({});
   const [editName, setEditName] = useState('');
   const [newName, setNewName] = useState('');
   const [description, setDescription] = useState('');
@@ -117,6 +128,40 @@ export default function AdminProgramManager({ programs: initial }: Props) {
       setError(e.message);
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleAssign = async (program: Program) => {
+    const targetUserId = selectedUsers[program.id];
+    if (!targetUserId) {
+      setError('Please choose a user before assigning this program');
+      return;
+    }
+
+    setAssigning(program.id);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/program-assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceProgramId: program.id,
+          targetUserId,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+
+      const assignedUser = users.find(user => user.id === targetUserId);
+      showSuccess(
+        '"' + program.name + '" assigned to ' +
+        (assignedUser ? `${assignedUser.name} (${assignedUser.email})` : 'selected user') +
+        ' and set active.'
+      );
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setAssigning(null);
     }
   };
 
@@ -239,6 +284,11 @@ export default function AdminProgramManager({ programs: initial }: Props) {
                 onRename={handleRename}
                 onActivate={handleActivate}
                 onDelete={handleDelete}
+                users={users}
+                selectedUserId={selectedUsers[program.id] ?? ''}
+                assigning={assigning}
+                onSelectUser={(userId) => setSelectedUsers(prev => ({ ...prev, [program.id]: userId }))}
+                onAssign={handleAssign}
               />
             ))}
           </div>
@@ -271,6 +321,11 @@ export default function AdminProgramManager({ programs: initial }: Props) {
                 onRename={handleRename}
                 onActivate={handleActivate}
                 onDelete={handleDelete}
+                users={users}
+                selectedUserId={selectedUsers[program.id] ?? ''}
+                assigning={assigning}
+                onSelectUser={(userId) => setSelectedUsers(prev => ({ ...prev, [program.id]: userId }))}
+                onAssign={handleAssign}
               />
             ))}
           </div>
@@ -292,11 +347,17 @@ interface RowProps {
   onRename: (id: string) => void;
   onActivate: (id: string) => void;
   onDelete: (id: string, name: string) => void;
+  users: AssignableUser[];
+  selectedUserId: string;
+  assigning: string | null;
+  onSelectUser: (userId: string) => void;
+  onAssign: (program: Program) => void;
 }
 
 function ProgramRow({
   program, editingId, editName, activating, deleting,
   setEditingId, setEditName, onRename, onActivate, onDelete,
+  users, selectedUserId, assigning, onSelectUser, onAssign,
 }: RowProps) {
   return (
     <div className="p-5">
@@ -377,6 +438,37 @@ function ProgramRow({
             className="text-xs bg-red-500/10 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-100 disabled:opacity-50 transition ml-auto">
             {deleting === program.id ? 'Deleting...' : 'Delete'}
           </button>
+        )}
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-white/[0.05]">
+        <p className="text-[10px] font-semibold tracking-widest text-white/25 uppercase mb-2">
+          Assign to user
+        </p>
+        {users.length === 0 ? (
+          <p className="text-xs text-white/30">No other users available yet.</p>
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <select
+              value={selectedUserId}
+              onChange={e => onSelectUser(e.target.value)}
+              className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition"
+            >
+              <option value="">Choose a user</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.email})
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => onAssign(program)}
+              disabled={!selectedUserId || assigning === program.id}
+              className="text-xs bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition"
+            >
+              {assigning === program.id ? 'Assigning...' : 'Assign Program'}
+            </button>
+          </div>
         )}
       </div>
 

@@ -15,6 +15,12 @@ export default async function AdminPage() {
     orderBy: { createdAt: 'desc' },
   });
 
+  const users = await prisma.user.findMany({
+    where: { id: { not: user.id } },
+    select: { id: true, name: true, email: true },
+    orderBy: [{ name: 'asc' }, { email: 'asc' }],
+  });
+
   return (
     <main className="min-h-screen bg-[#0A0A0F] pb-10">
 
@@ -45,7 +51,7 @@ export default async function AdminPage() {
           </Link>
         </div>
 
-        <AdminProgramManager programs={programs} />
+        <AdminProgramManager programs={programs} users={users} />
       </div>
     </main>
   );
