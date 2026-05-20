@@ -8,6 +8,24 @@ import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
 
 interface Props { exercise: Exercise; }
 
+function getExerciseTargetLabel(muscleGroup: string, defaultReps: string) {
+  const normalized = muscleGroup.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)) {
+    return 'time and distance target';
+  }
+
+  if (['sledpush', 'sledpull', 'farmers'].includes(normalized)) {
+    return 'weight and distance target';
+  }
+
+  if (normalized === 'burpee') {
+    return 'reps target';
+  }
+
+  return `${defaultReps} reps target`;
+}
+
 export default function ExerciseCard({ exercise }: Props) {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
   const [completedSets, setCompletedSets] = useState(0);
@@ -25,7 +43,7 @@ export default function ExerciseCard({ exercise }: Props) {
   const mediaPath = mediaUrl.split('?')[0] ?? '';
   const isVideo = /\.(mp4|mov|webm)$/i.test(mediaPath);
   const isExerciseTimerActive = activeExerciseId === exercise.id;
-  const isCardio = ['running', 'rowing', 'cycling'].includes(exercise.muscleGroup.trim().toLowerCase());
+  const targetLabel = getExerciseTargetLabel(exercise.muscleGroup, exercise.defaultReps);
 
   return (
     <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden mb-4 w-full">
@@ -135,7 +153,7 @@ export default function ExerciseCard({ exercise }: Props) {
           </button>
         </div>
         <p className="text-xs text-white/30 mb-4">
-          {exercise.defaultSets} sets - {isCardio ? 'time and distance target' : `${exercise.defaultReps} reps target`}
+          {exercise.defaultSets} sets - {targetLabel}
           {exercise.notes ? ` - ${exercise.notes}` : ''}
         </p>
 

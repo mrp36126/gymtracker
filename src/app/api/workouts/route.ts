@@ -62,10 +62,28 @@ const LogSchema = z.object({
   notes:      z.string().max(255).optional(),
 });
 
-const CARDIO_MUSCLE_GROUPS = new Set(['running', 'rowing', 'cycling']);
+type LogMode = 'timeDistance' | 'weightDistance' | 'repsOnly' | 'strength';
 
-function isCardioMuscleGroup(muscleGroup: string) {
-  return CARDIO_MUSCLE_GROUPS.has(muscleGroup.trim().toLowerCase());
+function normalizeMuscleGroup(muscleGroup: string) {
+  return muscleGroup.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function getLogMode(muscleGroup: string): LogMode {
+  const normalized = normalizeMuscleGroup(muscleGroup);
+
+  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)) {
+    return 'timeDistance';
+  }
+
+  if (['sledpush', 'sledpull', 'farmers'].includes(normalized)) {
+    return 'weightDistance';
+  }
+
+  if (normalized === 'burpee') {
+    return 'repsOnly';
+  }
+
+  return 'strength';
 }
 
 // POST /api/workouts – log a set
@@ -95,24 +113,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
   }
 
-  const isCardio = isCardioMuscleGroup(exercise.muscleGroup);
+  const logMode = getLogMode(exercise.muscleGroup);
 
-  if (isCardio && (!body.durationSeconds || !body.distanceKm)) {
+  if (logMode === 'timeDistance' && (!body.durationSeconds || !body.distanceKm)) {
     return NextResponse.json({ error: 'Enter time and distance first' }, { status: 422 });
   }
 
-  if (!isCardio && (body.weight === undefined || body.reps === undefined)) {
+  if (logMode === 'weightDistance' && (body.weight === undefined || !body.distanceKm)) {
+    return NextResponse.json({ error: 'Enter weight and distance first' }, { status: 422 });
+  }
+
+  if (logMode === 'repsOnly' && body.reps === undefined) {
+    return NextResponse.json({ error: 'Enter reps first' }, { status: 422 });
+  }
+
+  if (logMode === 'strength' && (body.weight === undefined || body.reps === undefined)) {
     return NextResponse.json({ error: 'Enter weight and reps first' }, { status: 422 });
   }
 
   const log = await prisma.workoutLog.create({
     data: {
       exerciseId: body.exerciseId,
-      weight: isCardio ? 0 : body.weight!,
+      weight: logMode === 'timeDistance' || logMode === 'repsOnly' ? 0 : body.weight!,
       sets: body.sets,
-      reps: isCardio ? 1 : body.reps!,
-      durationSeconds: isCardio ? body.durationSeconds : null,
-      distanceKm: isCardio ? body.distanceKm : null,
+      reps: logMode === 'timeDistance' || logMode === 'weightDistance' ? 1 : body.reps!,
+      durationSeconds: logMode === 'timeDistance' ? body.durationSeconds : null,
+      distanceKm: logMode === 'timeDistance' || logMode === 'weightDistance' ? body.distanceKm : null,
       notes: body.notes,
       userId: user!.id,
     },

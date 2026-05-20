@@ -22,10 +22,28 @@ interface Props {
   onSetComplete: (log: WorkoutLog) => void;
 }
 
-const CARDIO_MUSCLE_GROUPS = new Set(['running', 'rowing', 'cycling']);
+type LogMode = 'timeDistance' | 'weightDistance' | 'repsOnly' | 'strength';
 
-function isCardioMuscleGroup(muscleGroup: string) {
-  return CARDIO_MUSCLE_GROUPS.has(muscleGroup.trim().toLowerCase());
+function normalizeMuscleGroup(muscleGroup: string) {
+  return muscleGroup.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function getLogMode(muscleGroup: string): LogMode {
+  const normalized = normalizeMuscleGroup(muscleGroup);
+
+  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)) {
+    return 'timeDistance';
+  }
+
+  if (['sledpush', 'sledpull', 'farmers'].includes(normalized)) {
+    return 'weightDistance';
+  }
+
+  if (normalized === 'burpee') {
+    return 'repsOnly';
+  }
+
+  return 'strength';
 }
 
 function formatDuration(seconds?: number | null) {
@@ -44,13 +62,19 @@ export default function SetLogger({
   onSetComplete,
 }: Props) {
   const parseDefaultReps = (reps: string) => reps.includes('-') ? reps.split('-')[0] : reps;
-  const isCardio = isCardioMuscleGroup(muscleGroup);
+  const logMode = getLogMode(muscleGroup);
+  const isTimeDistance = logMode === 'timeDistance';
+  const isWeightDistance = logMode === 'weightDistance';
+  const isRepsOnly = logMode === 'repsOnly';
+  const hasDistance = isTimeDistance || isWeightDistance;
+  const hasWeight = logMode === 'strength' || isWeightDistance;
+  const hasReps = logMode === 'strength' || isRepsOnly;
 
   const initSets = (): SetRow[] =>
     Array.from({ length: defaultSets }, (_, i) => ({
       id: String(i),
       setNumber: i + 1,
-      weight: lastLog && !isCardio ? String(lastLog.weight) : '',
+      weight: lastLog && hasWeight ? String(lastLog.weight) : '',
       reps: parseDefaultReps(defaultReps),
       durationMinutes: '',
       distanceKm: '',
@@ -72,12 +96,22 @@ export default function SetLogger({
   const completeSet = async (setRow: SetRow) => {
     const durationSeconds = Math.round(parseFloat(setRow.durationMinutes) * 60);
 
-    if (isCardio && (!setRow.durationMinutes || !setRow.distanceKm || durationSeconds <= 0)) {
+    if (isTimeDistance && (!setRow.durationMinutes || !setRow.distanceKm || durationSeconds <= 0)) {
       setError('Enter time and distance first');
       return;
     }
 
-    if (!isCardio && (!setRow.weight || !setRow.reps)) {
+    if (isWeightDistance && (!setRow.weight || !setRow.distanceKm)) {
+      setError('Enter weight and distance first');
+      return;
+    }
+
+    if (isRepsOnly && !setRow.reps) {
+      setError('Enter reps first');
+      return;
+    }
+
+    if (logMode === 'strength' && (!setRow.weight || !setRow.reps)) {
       setError('Enter weight and reps first');
       return;
     }
@@ -88,16 +122,13 @@ export default function SetLogger({
       const res = await fetch('/api/workouts/sets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isCardio ? {
+        body: JSON.stringify({
           exerciseId,
           setNumber: setRow.setNumber,
-          durationSeconds,
-          distanceKm: parseFloat(setRow.distanceKm),
-        } : {
-          exerciseId,
-          setNumber: setRow.setNumber,
-          weight: parseFloat(setRow.weight),
-          reps: parseInt(setRow.reps),
+          ...(hasWeight ? { weight: parseFloat(setRow.weight) } : {}),
+          ...(hasReps ? { reps: parseInt(setRow.reps) } : {}),
+          ...(isTimeDistance ? { durationSeconds } : {}),
+          ...(hasDistance ? { distanceKm: parseFloat(setRow.distanceKm) } : {}),
         }),
       });
       if (res.status === 401) {
@@ -159,15 +190,20 @@ export default function SetLogger({
       )}
 
       {/* Column headers */}
-      <div className="grid items-center mb-1 px-1" style={{ gridTemplateColumns: '28px 1fr 1fr 1fr 36px' }}>
+      <div
+        className="grid items-center mb-1 px-1"
+        style={{ gridTemplateColumns: isRepsOnly ? '28px 1fr 1fr 36px' : '28px 1fr 1fr 1fr 36px' }}
+      >
         <div />
         <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">Previous</p>
         <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">
-          {isCardio ? 'Min' : 'KG'}
+          {isTimeDistance ? 'Min' : isRepsOnly ? 'Reps' : 'KG'}
         </p>
-        <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">
-          {isCardio ? 'KM' : 'Reps'}
-        </p>
+        {!isRepsOnly && (
+          <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">
+            {hasDistance ? 'Dist' : 'Reps'}
+          </p>
+        )}
         <div />
       </div>
 
@@ -181,7 +217,7 @@ export default function SetLogger({
                 ? 'bg-emerald-500/10 border border-emerald-500/20'
                 : 'bg-white/[0.04] border border-white/[0.06]'
             }`}
-            style={{ gridTemplateColumns: '28px 1fr 1fr 1fr 36px' }}
+            style={{ gridTemplateColumns: isRepsOnly ? '28px 1fr 1fr 36px' : '28px 1fr 1fr 1fr 36px' }}
           >
             {/* Set number */}
             <div className="text-center">
@@ -192,11 +228,19 @@ export default function SetLogger({
 
             {/* Previous */}
             <div className="text-center">
-              {lastLog && isCardio && lastLog.durationSeconds && lastLog.distanceKm ? (
+              {lastLog && isTimeDistance && lastLog.durationSeconds && lastLog.distanceKm ? (
                 <span className="text-[11px] text-white/25">
-                  {formatDuration(lastLog.durationSeconds)} / {lastLog.distanceKm}km
+                  {formatDuration(lastLog.durationSeconds)} / {lastLog.distanceKm}
                 </span>
-              ) : lastLog && !isCardio ? (
+              ) : lastLog && isWeightDistance && lastLog.distanceKm !== null && lastLog.distanceKm !== undefined ? (
+                <span className="text-[11px] text-white/25">
+                  {lastLog.weight}kg / {lastLog.distanceKm}
+                </span>
+              ) : lastLog && isRepsOnly ? (
+                <span className="text-[11px] text-white/25">
+                  {lastLog.reps} reps
+                </span>
+              ) : lastLog && logMode === 'strength' ? (
                 <span className="text-[11px] text-white/25">
                   {lastLog.weight}kg x {lastLog.reps}
                 </span>
@@ -205,7 +249,7 @@ export default function SetLogger({
               )}
             </div>
 
-            {/* Weight / time input */}
+            {/* Primary input */}
             <div className={`rounded-lg py-2 text-center border ${
               setRow.completed
                 ? 'bg-emerald-500/5 border-emerald-500/10'
@@ -214,10 +258,10 @@ export default function SetLogger({
               <input
                 type="number"
                 inputMode="decimal"
-                step={isCardio ? '0.1' : '0.5'}
-                min={isCardio ? '0.1' : '0'}
-                value={isCardio ? setRow.durationMinutes : setRow.weight}
-                onChange={e => updateSet(setRow.id, isCardio ? 'durationMinutes' : 'weight', e.target.value)}
+                step={isTimeDistance ? '0.1' : isRepsOnly ? '1' : '0.5'}
+                min={isTimeDistance ? '0.1' : isRepsOnly ? '1' : '0'}
+                value={isTimeDistance ? setRow.durationMinutes : isRepsOnly ? setRow.reps : setRow.weight}
+                onChange={e => updateSet(setRow.id, isTimeDistance ? 'durationMinutes' : isRepsOnly ? 'reps' : 'weight', e.target.value)}
                 disabled={setRow.completed}
                 placeholder="0"
                 className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
@@ -226,26 +270,27 @@ export default function SetLogger({
               />
             </div>
 
-            {/* Reps / distance input */}
-            <div className={`rounded-lg py-2 text-center border ${
-              setRow.completed
-                ? 'bg-emerald-500/5 border-emerald-500/10'
-                : 'bg-white/[0.06] border-white/[0.08]'
-            }`}>
-              <input
-                type="number"
-                inputMode={isCardio ? 'decimal' : 'numeric'}
-                step={isCardio ? '0.01' : '1'}
-                min={isCardio ? '0.01' : '1'}
-                value={isCardio ? setRow.distanceKm : setRow.reps}
-                onChange={e => updateSet(setRow.id, isCardio ? 'distanceKm' : 'reps', e.target.value)}
-                disabled={setRow.completed}
-                placeholder="0"
-                className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
-                  setRow.completed ? 'text-emerald-400' : 'text-white'
-                }`}
-              />
-            </div>
+            {!isRepsOnly && (
+              <div className={`rounded-lg py-2 text-center border ${
+                setRow.completed
+                  ? 'bg-emerald-500/5 border-emerald-500/10'
+                  : 'bg-white/[0.06] border-white/[0.08]'
+              }`}>
+                <input
+                  type="number"
+                  inputMode={hasDistance ? 'decimal' : 'numeric'}
+                  step={hasDistance ? '0.01' : '1'}
+                  min={hasDistance ? '0.01' : '1'}
+                  value={hasDistance ? setRow.distanceKm : setRow.reps}
+                  onChange={e => updateSet(setRow.id, hasDistance ? 'distanceKm' : 'reps', e.target.value)}
+                  disabled={setRow.completed}
+                  placeholder="0"
+                  className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
+                    setRow.completed ? 'text-emerald-400' : 'text-white'
+                  }`}
+                />
+              </div>
+            )}
 
             {/* Complete button */}
             <div className="flex justify-center">
