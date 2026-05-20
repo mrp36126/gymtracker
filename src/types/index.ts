@@ -36,6 +36,8 @@ export interface WorkoutLog {
   weight: number;
   sets: number;
   reps: number;
+  durationSeconds?: number | null;
+  distanceKm?: number | null;
   notes?: string;
   loggedAt: string;
   exerciseId: string;

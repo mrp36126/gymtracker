@@ -54,11 +54,19 @@ export async function GET(req: NextRequest) {
 
 const LogSchema = z.object({
   exerciseId: z.string().cuid(),
-  weight:     z.number().nonnegative(),
+  weight:     z.number().nonnegative().optional(),
   sets:       z.number().int().positive().max(20),
-  reps:       z.number().int().positive().max(100),
+  reps:       z.number().int().positive().max(100).optional(),
+  durationSeconds: z.number().int().positive().optional(),
+  distanceKm: z.number().positive().optional(),
   notes:      z.string().max(255).optional(),
 });
+
+const CARDIO_MUSCLE_GROUPS = new Set(['running', 'rowing', 'cycling']);
+
+function isCardioMuscleGroup(muscleGroup: string) {
+  return CARDIO_MUSCLE_GROUPS.has(muscleGroup.trim().toLowerCase());
+}
 
 // POST /api/workouts – log a set
 export async function POST(req: NextRequest) {
@@ -82,14 +90,30 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const exerciseOk = await findExerciseForUser(body.exerciseId, user!.id);
-  if (!exerciseOk) {
+  const exercise = await findExerciseForUser(body.exerciseId, user!.id);
+  if (!exercise) {
     return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
+  }
+
+  const isCardio = isCardioMuscleGroup(exercise.muscleGroup);
+
+  if (isCardio && (!body.durationSeconds || !body.distanceKm)) {
+    return NextResponse.json({ error: 'Enter time and distance first' }, { status: 422 });
+  }
+
+  if (!isCardio && (body.weight === undefined || body.reps === undefined)) {
+    return NextResponse.json({ error: 'Enter weight and reps first' }, { status: 422 });
   }
 
   const log = await prisma.workoutLog.create({
     data: {
-      ...body,
+      exerciseId: body.exerciseId,
+      weight: isCardio ? 0 : body.weight!,
+      sets: body.sets,
+      reps: isCardio ? 1 : body.reps!,
+      durationSeconds: isCardio ? body.durationSeconds : null,
+      distanceKm: isCardio ? body.distanceKm : null,
+      notes: body.notes,
       userId: user!.id,
     },
   });

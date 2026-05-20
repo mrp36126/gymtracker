@@ -7,27 +7,53 @@ interface SetRow {
   setNumber: number;
   weight: string;
   reps: string;
+  durationMinutes: string;
+  distanceKm: string;
   completed: boolean;
   logId?: string;
 }
 
 interface Props {
   exerciseId: string;
+  muscleGroup: string;
   defaultSets: number;
   defaultReps: string;
   lastLog: WorkoutLog | null;
   onSetComplete: (log: WorkoutLog) => void;
 }
 
-export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLog, onSetComplete }: Props) {
+const CARDIO_MUSCLE_GROUPS = new Set(['running', 'rowing', 'cycling']);
+
+function isCardioMuscleGroup(muscleGroup: string) {
+  return CARDIO_MUSCLE_GROUPS.has(muscleGroup.trim().toLowerCase());
+}
+
+function formatDuration(seconds?: number | null) {
+  if (!seconds) return '';
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+}
+
+export default function SetLogger({
+  exerciseId,
+  muscleGroup,
+  defaultSets,
+  defaultReps,
+  lastLog,
+  onSetComplete,
+}: Props) {
   const parseDefaultReps = (reps: string) => reps.includes('-') ? reps.split('-')[0] : reps;
+  const isCardio = isCardioMuscleGroup(muscleGroup);
 
   const initSets = (): SetRow[] =>
     Array.from({ length: defaultSets }, (_, i) => ({
       id: String(i),
       setNumber: i + 1,
-      weight: lastLog ? String(lastLog.weight) : '',
+      weight: lastLog && !isCardio ? String(lastLog.weight) : '',
       reps: parseDefaultReps(defaultReps),
+      durationMinutes: '',
+      distanceKm: '',
       completed: false,
     }));
 
@@ -35,22 +61,39 @@ export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLo
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  const updateSet = (id: string, field: 'weight' | 'reps', value: string) => {
+  const updateSet = (
+    id: string,
+    field: 'weight' | 'reps' | 'durationMinutes' | 'distanceKm',
+    value: string
+  ) => {
     setSets(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   const completeSet = async (setRow: SetRow) => {
-    if (!setRow.weight || !setRow.reps) {
+    const durationSeconds = Math.round(parseFloat(setRow.durationMinutes) * 60);
+
+    if (isCardio && (!setRow.durationMinutes || !setRow.distanceKm || durationSeconds <= 0)) {
+      setError('Enter time and distance first');
+      return;
+    }
+
+    if (!isCardio && (!setRow.weight || !setRow.reps)) {
       setError('Enter weight and reps first');
       return;
     }
+
     setError('');
     setSaving(setRow.id);
     try {
       const res = await fetch('/api/workouts/sets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(isCardio ? {
+          exerciseId,
+          setNumber: setRow.setNumber,
+          durationSeconds,
+          distanceKm: parseFloat(setRow.distanceKm),
+        } : {
           exerciseId,
           setNumber: setRow.setNumber,
           weight: parseFloat(setRow.weight),
@@ -82,13 +125,10 @@ export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLo
       setNumber: next,
       weight: last?.weight ?? '',
       reps: last?.reps ?? parseDefaultReps(defaultReps),
+      durationMinutes: last?.durationMinutes ?? '',
+      distanceKm: last?.distanceKm ?? '',
       completed: false,
     }]);
-  };
-
-  const removeSet = (id: string) => {
-    if (sets.length <= 1) return;
-    setSets(prev => prev.filter(s => s.id !== id).map((s, i) => ({ ...s, setNumber: i + 1 })));
   };
 
   const completedCount = sets.filter(s => s.completed).length;
@@ -122,8 +162,12 @@ export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLo
       <div className="grid items-center mb-1 px-1" style={{ gridTemplateColumns: '28px 1fr 1fr 1fr 36px' }}>
         <div />
         <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">Previous</p>
-        <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">KG</p>
-        <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">Reps</p>
+        <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">
+          {isCardio ? 'Min' : 'KG'}
+        </p>
+        <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">
+          {isCardio ? 'KM' : 'Reps'}
+        </p>
         <div />
       </div>
 
@@ -148,16 +192,20 @@ export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLo
 
             {/* Previous */}
             <div className="text-center">
-              {lastLog ? (
+              {lastLog && isCardio && lastLog.durationSeconds && lastLog.distanceKm ? (
                 <span className="text-[11px] text-white/25">
-                  {lastLog.weight}kg×{lastLog.reps}
+                  {formatDuration(lastLog.durationSeconds)} / {lastLog.distanceKm}km
+                </span>
+              ) : lastLog && !isCardio ? (
+                <span className="text-[11px] text-white/25">
+                  {lastLog.weight}kg x {lastLog.reps}
                 </span>
               ) : (
-                <span className="text-[11px] text-white/15">—</span>
+                <span className="text-[11px] text-white/15">-</span>
               )}
             </div>
 
-            {/* Weight input */}
+            {/* Weight / time input */}
             <div className={`rounded-lg py-2 text-center border ${
               setRow.completed
                 ? 'bg-emerald-500/5 border-emerald-500/10'
@@ -166,10 +214,10 @@ export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLo
               <input
                 type="number"
                 inputMode="decimal"
-                step="0.5"
-                min="0"
-                value={setRow.weight}
-                onChange={e => updateSet(setRow.id, 'weight', e.target.value)}
+                step={isCardio ? '0.1' : '0.5'}
+                min={isCardio ? '0.1' : '0'}
+                value={isCardio ? setRow.durationMinutes : setRow.weight}
+                onChange={e => updateSet(setRow.id, isCardio ? 'durationMinutes' : 'weight', e.target.value)}
                 disabled={setRow.completed}
                 placeholder="0"
                 className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
@@ -178,7 +226,7 @@ export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLo
               />
             </div>
 
-            {/* Reps input */}
+            {/* Reps / distance input */}
             <div className={`rounded-lg py-2 text-center border ${
               setRow.completed
                 ? 'bg-emerald-500/5 border-emerald-500/10'
@@ -186,10 +234,11 @@ export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLo
             }`}>
               <input
                 type="number"
-                inputMode="numeric"
-                min="1"
-                value={setRow.reps}
-                onChange={e => updateSet(setRow.id, 'reps', e.target.value)}
+                inputMode={isCardio ? 'decimal' : 'numeric'}
+                step={isCardio ? '0.01' : '1'}
+                min={isCardio ? '0.01' : '1'}
+                value={isCardio ? setRow.distanceKm : setRow.reps}
+                onChange={e => updateSet(setRow.id, isCardio ? 'distanceKm' : 'reps', e.target.value)}
                 disabled={setRow.completed}
                 placeholder="0"
                 className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
@@ -198,7 +247,7 @@ export default function SetLogger({ exerciseId, defaultSets, defaultReps, lastLo
               />
             </div>
 
-            {/* Complete / remove button */}
+            {/* Complete button */}
             <div className="flex justify-center">
               {setRow.completed ? (
                 <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center flex-shrink-0">

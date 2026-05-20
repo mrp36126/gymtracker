@@ -63,6 +63,8 @@ model WorkoutLog {
   weight     Float
   sets       Int
   reps       Int
+  durationSeconds Int?
+  distanceKm Float?
   notes      String?
   loggedAt   DateTime @default(now())
   userId     String

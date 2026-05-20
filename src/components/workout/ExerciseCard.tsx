@@ -25,6 +25,7 @@ export default function ExerciseCard({ exercise }: Props) {
   const mediaPath = mediaUrl.split('?')[0] ?? '';
   const isVideo = /\.(mp4|mov|webm)$/i.test(mediaPath);
   const isExerciseTimerActive = activeExerciseId === exercise.id;
+  const isCardio = ['running', 'rowing', 'cycling'].includes(exercise.muscleGroup.trim().toLowerCase());
 
   return (
     <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden mb-4 w-full">
@@ -134,12 +135,13 @@ export default function ExerciseCard({ exercise }: Props) {
           </button>
         </div>
         <p className="text-xs text-white/30 mb-4">
-          {exercise.defaultSets} sets · {exercise.defaultReps} reps target
-          {exercise.notes ? ` · ${exercise.notes}` : ''}
+          {exercise.defaultSets} sets - {isCardio ? 'time and distance target' : `${exercise.defaultReps} reps target`}
+          {exercise.notes ? ` - ${exercise.notes}` : ''}
         </p>
 
         <SetLogger
           exerciseId={exercise.id}
+          muscleGroup={exercise.muscleGroup}
           defaultSets={exercise.defaultSets}
           defaultReps={exercise.defaultReps}
           lastLog={lastLog}
