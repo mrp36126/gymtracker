@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { WorkoutTimerProvider } from '@/components/timer/WorkoutTimerProvider';
 
 export const metadata: Metadata = {
   title: 'GymTracker Pro',
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="bg-[#0A0A0F] text-white min-h-screen overflow-x-hidden">
-        {children}
+        <WorkoutTimerProvider>{children}</WorkoutTimerProvider>
       </body>
     </html>
   );

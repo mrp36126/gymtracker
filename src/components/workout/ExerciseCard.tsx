@@ -4,6 +4,7 @@ import type { Exercise, WorkoutLog } from '@/types';
 import SetLogger from './SetLogger';
 import ExerciseInstructionModal from './ExerciseInstructionModal';
 import ExerciseDetailImageModal from './ExerciseDetailImageModal';
+import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
 
 interface Props { exercise: Exercise; }
 
@@ -12,6 +13,7 @@ export default function ExerciseCard({ exercise }: Props) {
   const [completedSets, setCompletedSets] = useState(0);
   const [guideOpen, setGuideOpen] = useState(false);
   const [detailImageOpen, setDetailImageOpen] = useState(false);
+  const { activeExerciseId, startExercise, stopExercise } = useWorkoutTimer();
 
   const handleSetComplete = (log: WorkoutLog) => {
     setCompletedSets(prev => prev + 1);
@@ -22,6 +24,7 @@ export default function ExerciseCard({ exercise }: Props) {
   const detailImageUrl = exercise.detailImageUrl ?? '';
   const mediaPath = mediaUrl.split('?')[0] ?? '';
   const isVideo = /\.(mp4|mov|webm)$/i.test(mediaPath);
+  const isExerciseTimerActive = activeExerciseId === exercise.id;
 
   return (
     <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden mb-4 w-full">
@@ -105,8 +108,30 @@ export default function ExerciseCard({ exercise }: Props) {
       <div className="p-4">
 
         {/* Exercise header */}
-        <div className="flex items-start justify-between mb-1">
+        <div className="flex items-start justify-between gap-3 mb-1">
           <h3 className="text-base font-extrabold text-white tracking-tight flex-1 pr-2">{exercise.name}</h3>
+          <button
+            type="button"
+            onClick={() => isExerciseTimerActive ? stopExercise() : startExercise(exercise.id, exercise.name)}
+            className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide transition active:scale-95 ${
+              isExerciseTimerActive
+                ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+                : 'border-white/10 bg-white/[0.04] text-white/40 hover:border-indigo-400/30 hover:text-white/70'
+            }`}
+            aria-pressed={isExerciseTimerActive}
+            aria-label={`${isExerciseTimerActive ? 'Stop' : 'Start'} timer for ${exercise.name}`}
+          >
+            {isExerciseTimerActive ? (
+              <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 7h10v10H7z" />
+              </svg>
+            ) : (
+              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10 2h4M12 14l4-4M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
+              </svg>
+            )}
+            {isExerciseTimerActive ? 'Stop' : 'Time'}
+          </button>
         </div>
         <p className="text-xs text-white/30 mb-4">
           {exercise.defaultSets} sets · {exercise.defaultReps} reps target

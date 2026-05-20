@@ -5,6 +5,7 @@ import ExerciseCard from '@/components/workout/ExerciseCard';
 import type { Exercise } from '@/types';
 import Link from 'next/link';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
+import WorkoutTimerButton from '@/components/timer/WorkoutTimerButton';
 
 export default async function SupplementaryProgramPage({
   params,
@@ -63,7 +64,7 @@ export default async function SupplementaryProgramPage({
           <p className="text-xs font-semibold text-white/30 uppercase tracking-widest">Supplementary</p>
           <p className="text-sm font-bold text-white">{program.name}</p>
         </div>
-        <div className="w-10"></div>
+        <WorkoutTimerButton label={program.name} />
       </div>
 
       <div className="max-w-lg mx-auto px-4 pt-5">

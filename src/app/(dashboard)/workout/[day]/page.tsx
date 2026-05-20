@@ -5,6 +5,7 @@ import ExerciseCard from '@/components/workout/ExerciseCard';
 import type { Exercise } from '@/types';
 import Link from 'next/link';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
+import WorkoutTimerButton from '@/components/timer/WorkoutTimerButton';
 
 export default async function WorkoutDayPage({ params }: { params: Promise<{ day: string }> }) {
   const user = await getAuthUser();
@@ -69,7 +70,10 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
           <p className="text-xs font-semibold text-white/30 uppercase tracking-widest">{program.name}</p>
           <p className="text-sm font-bold text-white">{day} Workout</p>
         </div>
-        <div className="text-xs text-white/30">{exercisesWithLogs.length} exercises</div>
+        <div className="flex items-center justify-end gap-2">
+          <WorkoutTimerButton label={`${day} Workout`} />
+          <div className="hidden text-xs text-white/30 sm:block">{exercisesWithLogs.length} exercises</div>
+        </div>
       </div>
 
       <div className="w-full max-w-lg mx-auto px-4 pt-5 overflow-hidden">
