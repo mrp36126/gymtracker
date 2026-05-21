@@ -31,6 +31,20 @@ export interface Exercise {
   lastLog?: WorkoutLog | null;
 }
 
+export interface ExerciseCatalogItem {
+  id: string;
+  exerciseName: string;
+  category: string;
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
+  equipment: string;
+  difficulty: string;
+  description: string;
+  instructions: string;
+  imageUrl: string;
+  detailImageUrl: string;
+}
+
 export interface WorkoutLog {
   id: string;
   weight: number;

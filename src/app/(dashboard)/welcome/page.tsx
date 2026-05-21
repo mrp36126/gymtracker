@@ -44,14 +44,18 @@ export default async function WelcomePage() {
     });
   } catch (err) {}
 
+  const hyroxProgram = supplementaryPrograms.find((program: any) =>
+    program.name.toLowerCase().includes('hyrox')
+  );
+  const otherSupplementaryPrograms = supplementaryPrograms.filter((program: any) =>
+    program.id !== hyroxProgram?.id
+  );
   const initials = user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
     <main className="min-h-screen bg-[#0A0A0F] pb-24">
-
-      {/* Top nav */}
       <nav className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
@@ -66,76 +70,89 @@ export default async function WelcomePage() {
       </nav>
 
       <div className="px-4 pt-7 pb-4 w-full max-w-lg mx-auto">
-
-        {/* Greeting */}
         <div className="mb-7">
           <p className="text-xs font-semibold tracking-widest text-indigo-400 uppercase mb-1">{greeting}</p>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">Hello, {user.name}</h1>
           <p className="text-sm text-white/40 mt-1">
-            {activeProgram ? activeProgram.name : 'No active program'} 
-            {todayExerciseCount > 0 ? ` · ${todayExerciseCount} exercises today` : ''}
+            {activeProgram ? activeProgram.name : 'No active program'}
+            {todayExerciseCount > 0 ? ` - ${todayExerciseCount} exercises today` : ''}
           </p>
         </div>
 
-        {/* Today's primary workout */}
-        {activeProgram ? (
-          <Link href={'/workout/' + todayName.toLowerCase()} className="block mb-4">
-            <div className="relative bg-indigo-600 rounded-2xl p-6 overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-8 translate-x-8"></div>
-              <div className="absolute bottom-0 right-16 w-20 h-20 bg-white/5 rounded-full translate-y-6"></div>
-              <p className="text-xs font-semibold tracking-widest text-white/60 uppercase mb-2">Today&apos;s Workout</p>
-              <p className="text-2xl font-extrabold text-white tracking-tight">{todayName} Session</p>
-              <p className="text-sm text-white/60 mt-1">{activeProgram.name}</p>
-              <div className="absolute right-6 top-1/2 -translate-y-1/2 text-white/40 text-2xl">→</div>
-            </div>
-          </Link>
-        ) : user.isAdmin ? (
-          <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6 mb-4 text-center">
-            <p className="text-white/40 text-sm">No active program</p>
-            <Link href="/admin" className="text-indigo-400 text-sm mt-1 inline-block hover:text-indigo-300 transition">
-              Go to Admin to activate one ?
+        <div className="mb-6">
+          <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-3">Choose Today&apos;s Workout</p>
+          <div className="grid gap-3">
+            {activeProgram ? (
+              <Link href={'/workout/' + todayName.toLowerCase()} className="block">
+                <div className="relative bg-indigo-600 rounded-2xl p-6 overflow-hidden hover:bg-indigo-500 transition">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-8 translate-x-8"></div>
+                  <div className="absolute bottom-0 right-16 w-20 h-20 bg-white/5 rounded-full translate-y-6"></div>
+                  <p className="text-xs font-semibold tracking-widest text-white/60 uppercase mb-2">Existing Active Program</p>
+                  <p className="text-2xl font-extrabold text-white tracking-tight">{todayName} Session</p>
+                  <p className="text-sm text-white/60 mt-1">{activeProgram.name}</p>
+                  <div className="absolute right-6 top-1/2 -translate-y-1/2 text-white/40 text-2xl">-&gt;</div>
+                </div>
+              </Link>
+            ) : (
+              <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Existing Active Program</p>
+                <p className="text-lg font-extrabold text-white">No active program assigned</p>
+                {user.isAdmin ? (
+                  <Link href="/admin" className="text-indigo-400 text-sm mt-2 inline-block hover:text-indigo-300 transition">
+                    Go to Admin to activate one
+                  </Link>
+                ) : (
+                  <p className="text-sm text-white/45 mt-2">Your administrator can assign a program when it is ready.</p>
+                )}
+              </div>
+            )}
+
+            <Link href={hyroxProgram ? '/supplementary/' + hyroxProgram.id : '/hyrox'} className="block">
+              <div className="relative bg-white/[0.04] border border-purple-500/20 rounded-2xl p-5 hover:border-purple-500/40 hover:bg-white/[0.06] transition">
+                <p className="text-xs font-semibold tracking-widest text-purple-300/60 uppercase mb-2">Hyrox</p>
+                <p className="text-xl font-extrabold text-white tracking-tight">
+                  {hyroxProgram ? hyroxProgram.name : 'Hyrox'}
+                </p>
+                <p className="text-sm text-white/45 mt-1">
+                  {hyroxProgram?.description || 'Conditioning-focused workout option.'}
+                </p>
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-purple-300/50 text-xl">-&gt;</div>
+              </div>
+            </Link>
+
+            <Link href="/custom-workout" className="block">
+              <div className="relative bg-white/[0.04] border border-emerald-500/20 rounded-2xl p-5 hover:border-emerald-500/40 hover:bg-white/[0.06] transition">
+                <p className="text-xs font-semibold tracking-widest text-emerald-300/60 uppercase mb-2">Flexible Session</p>
+                <p className="text-xl font-extrabold text-white tracking-tight">I Want To Do My Own Program Today</p>
+                <p className="text-sm text-white/45 mt-1">Build a workout one exercise at a time from the exercise catalog.</p>
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-emerald-300/50 text-xl">-&gt;</div>
+              </div>
             </Link>
           </div>
-        ) : (
+        </div>
+
+        {!activeProgram && !user.isAdmin && (
           <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6 mb-4">
             <p className="text-lg font-bold text-white mb-4">
               Welcome to the best gym app, and thank you for joining our fitness community!
             </p>
-
             <div className="space-y-4 text-sm leading-6 text-white/60">
               <p>
                 Your account has been successfully created and you are all set to begin your journey.
                 At the moment, your workout program has not yet been assigned by the administrator.
               </p>
-
-              <div>
-                <p className="mb-2">Once your program has been loaded, you will be able to:</p>
-                <ul className="space-y-1 list-disc pl-5">
-                  <li>View your personalized workout plan</li>
-                  <li>Track your progress and performance</li>
-                  <li>Log your workouts and achievements</li>
-                  <li>Stay motivated with your fitness goals</li>
-                </ul>
-              </div>
-
               <p>
-                We are preparing everything for you behind the scenes, so please check back soon.
-                If you believe there has been a delay, feel free to contact your administrator for assistance.
-              </p>
-
-              <p>
-                We are excited to be part of your fitness journey. Believe in yourself and you will achieve great results.
+                You can still use the custom workout option today while your assigned program is being prepared.
               </p>
             </div>
           </div>
         )}
 
-        {/* Supplementary programs */}
-        {supplementaryPrograms.length > 0 && (
+        {otherSupplementaryPrograms.length > 0 && (
           <div className="mb-4">
             <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-3">Additional Programs</p>
             <div className="space-y-3">
-              {supplementaryPrograms.map((prog: any) => (
+              {otherSupplementaryPrograms.map((prog: any) => (
                 <Link key={prog.id} href={'/supplementary/' + prog.id} className="block">
                   <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 flex items-center justify-between hover:border-indigo-500/40 transition">
                     <div>
@@ -144,7 +161,7 @@ export default async function WelcomePage() {
                         <p className="text-xs text-white/40 mt-0.5">{prog.description}</p>
                       )}
                     </div>
-                    <span className="text-indigo-400 font-bold">→</span>
+                    <span className="text-indigo-400 font-bold">-&gt;</span>
                   </div>
                 </Link>
               ))}
@@ -152,7 +169,6 @@ export default async function WelcomePage() {
           </div>
         )}
 
-        {/* Stats row */}
         <div className={`grid gap-3 mb-4 ${(activeProgram || user.isAdmin) ? 'grid-cols-3' : 'grid-cols-1'}`}>
           {(activeProgram || user.isAdmin) && (
             <>
@@ -178,7 +194,6 @@ export default async function WelcomePage() {
           </Link>
         </div>
 
-        {/* Admin */}
         {user.isAdmin && (
           <Link href="/admin" className="block">
             <div className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-4 flex items-center justify-between hover:border-white/10 transition">
@@ -186,7 +201,7 @@ export default async function WelcomePage() {
                 <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-0.5">Admin</p>
                 <p className="text-sm font-bold text-white/70">Manage Programs & Media</p>
               </div>
-              <span className="text-white/20 text-lg">→</span>
+              <span className="text-white/20 text-lg">-&gt;</span>
             </div>
           </Link>
         )}
