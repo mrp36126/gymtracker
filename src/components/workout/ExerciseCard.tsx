@@ -3,12 +3,11 @@ import { useState } from 'react';
 import type { Exercise, WorkoutLog } from '@/types';
 import SetLogger from './SetLogger';
 import ExerciseInstructionModal from './ExerciseInstructionModal';
-import ExerciseDetailImageModal from './ExerciseDetailImageModal';
 import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
 
 interface Props { exercise: Exercise; }
 
-function DetailImage({ src, alt, onOpen }: { src: string; alt: string; onOpen: () => void }) {
+function DetailImage({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(!src);
 
   if (failed) {
@@ -24,15 +23,10 @@ function DetailImage({ src, alt, onOpen }: { src: string; alt: string; onOpen: (
   }
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="block aspect-[16/9] w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#12121A] text-left transition hover:border-white/[0.14]"
-      aria-label={`Open ${alt}`}
-    >
+    <div className="aspect-[16/9] w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#12121A]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt} className="h-full w-full object-contain" onError={() => setFailed(true)} />
-    </button>
+    </div>
   );
 }
 
@@ -58,7 +52,6 @@ export default function ExerciseCard({ exercise }: Props) {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
   const [completedSets, setCompletedSets] = useState(0);
   const [guideOpen, setGuideOpen] = useState(false);
-  const [detailImageOpen, setDetailImageOpen] = useState(false);
   const { activeExerciseId, startExercise, stopExercise } = useWorkoutTimer();
 
   const handleSetComplete = (log: WorkoutLog) => {
@@ -88,15 +81,6 @@ export default function ExerciseCard({ exercise }: Props) {
           mediaUrl={mediaUrl}
         />
       ) : null}
-      {detailImageUrl ? (
-        <ExerciseDetailImageModal
-          open={detailImageOpen}
-          onClose={() => setDetailImageOpen(false)}
-          name={exercise.name}
-          imageUrl={detailImageUrl}
-        />
-      ) : null}
-
       {/* Media */}
       <div className="relative w-full min-h-[160px] bg-[#12121A] overflow-hidden" style={{ aspectRatio: '16/9' }}>
         {mediaUrl ? (
@@ -117,9 +101,9 @@ export default function ExerciseCard({ exercise }: Props) {
           ) : (
             <button
               type="button"
-              onClick={() => detailImageUrl ? setDetailImageOpen(true) : setGuideOpen(true)}
-              className="relative block w-full h-full group cursor-zoom-in text-left touch-manipulation"
-              aria-label={detailImageUrl ? `Open detailed full-screen image for ${exercise.name}` : `Open technique guide for ${exercise.name}`}
+              onClick={() => setGuideOpen(true)}
+              className="relative block w-full h-full group text-left touch-manipulation"
+              aria-label={`Open technique guide for ${exercise.name}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={mediaUrl} alt="" className="w-full h-full object-contain" />
@@ -128,7 +112,7 @@ export default function ExerciseCard({ exercise }: Props) {
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                   <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
                 </svg>
-                {detailImageUrl ? 'View details' : 'Technique guide'}
+                Technique guide
               </span>
             </button>
           )
@@ -197,7 +181,6 @@ export default function ExerciseCard({ exercise }: Props) {
               <DetailImage
                 src={detailImageUrl}
                 alt={`${exercise.name} details`}
-                onOpen={() => setDetailImageOpen(true)}
               />
             </div>
           ) : null}
@@ -205,10 +188,10 @@ export default function ExerciseCard({ exercise }: Props) {
           {mediaUrl ? (
             <button
               type="button"
-              onClick={() => isVideo ? setGuideOpen(true) : detailImageUrl ? setDetailImageOpen(true) : setGuideOpen(true)}
+              onClick={() => setGuideOpen(true)}
               className="mt-3 inline-flex rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs font-bold text-white/55 transition hover:bg-white/[0.08] hover:text-white/75"
             >
-              {isVideo ? 'Open full guide' : detailImageUrl ? 'Open detail image' : 'Open exercise image'}
+              {isVideo ? 'Open full guide' : 'Open exercise image'}
             </button>
           ) : null}
         </details>
