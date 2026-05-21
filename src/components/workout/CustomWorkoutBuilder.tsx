@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ExerciseCatalogItem } from '@/types';
+import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
 
 type SelectedExercise = {
   instanceId: string;
@@ -14,6 +16,8 @@ type SelectedExercise = {
 type Props = {
   exercises: ExerciseCatalogItem[];
 };
+
+export const CUSTOM_WORKOUT_STORAGE_KEY = 'gymtracker-custom-workout-today';
 
 function muscleLabel(muscles: string[]) {
   return muscles.length > 0 ? muscles.join(', ') : 'Not specified';
@@ -54,6 +58,8 @@ function ExerciseImage({
 }
 
 export default function CustomWorkoutBuilder({ exercises }: Props) {
+  const router = useRouter();
+  const { startWorkout } = useWorkoutTimer();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [selected, setSelected] = useState<SelectedExercise[]>([]);
@@ -123,6 +129,17 @@ export default function CustomWorkoutBuilder({ exercises }: Props) {
         item.instanceId === instanceId ? { ...item, [field]: value } : item
       ))
     );
+  };
+
+  const beginWorkout = () => {
+    if (selected.length === 0) return;
+
+    window.localStorage.setItem(CUSTOM_WORKOUT_STORAGE_KEY, JSON.stringify({
+      startedAt: new Date().toISOString(),
+      exercises: selected,
+    }));
+    startWorkout('Custom Workout');
+    router.push('/custom-workout/session');
   };
 
   return (
@@ -247,6 +264,15 @@ export default function CustomWorkoutBuilder({ exercises }: Props) {
               </button>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={beginWorkout}
+            disabled={selected.length === 0}
+            className="mb-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-white/25"
+          >
+            Begin
+          </button>
 
           {selected.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-white/[0.12] bg-black/10 p-6 text-center">
