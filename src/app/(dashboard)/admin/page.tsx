@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import AdminProgramManager from '@/components/admin/AdminProgramManager';
+import { loadExerciseCatalog } from '@/lib/exercise-catalog';
 
 export default async function AdminPage() {
   const user = await getAuthUser();
@@ -35,6 +36,8 @@ export default async function AdminPage() {
     orderBy: [{ createdAt: 'asc' }],
   });
 
+  const exerciseCatalog = await loadExerciseCatalog();
+
   return (
     <main className="min-h-screen bg-[#0A0A0F] pb-10">
 
@@ -65,7 +68,12 @@ export default async function AdminPage() {
           </Link>
         </div>
 
-        <AdminProgramManager programs={programs} users={users} waitingUsers={waitingUsers} />
+        <AdminProgramManager
+          programs={programs}
+          users={users}
+          waitingUsers={waitingUsers}
+          exerciseCatalog={exerciseCatalog}
+        />
       </div>
     </main>
   );

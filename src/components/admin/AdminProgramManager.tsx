@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import type { ExerciseCatalogItem } from '@/types';
 
 interface Program {
   id: string;
@@ -24,14 +25,31 @@ interface Props {
   programs: Program[];
   users: AssignableUser[];
   waitingUsers: AssignableUser[];
+  exerciseCatalog: ExerciseCatalogItem[];
 }
 
-export default function AdminProgramManager({ programs: initial, users, waitingUsers }: Props) {
+type SelectedProgramExercise = {
+  instanceId: string;
+  exerciseId: string;
+  day: string;
+  sets: string;
+  reps: string;
+  notes: string;
+};
+
+const dayOptions = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+function muscleLabel(muscles: string[]) {
+  return muscles.length > 0 ? muscles.join(', ') : 'Not specified';
+}
+
+export default function AdminProgramManager({ programs: initial, users, waitingUsers, exerciseCatalog }: Props) {
   const router = useRouter();
   const [programs, setPrograms] = useState(initial);
   const [managedUsers, setManagedUsers] = useState(users);
   const [pendingUsers, setPendingUsers] = useState(waitingUsers);
   const [uploading, setUploading] = useState(false);
+  const [creatingFromPool, setCreatingFromPool] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activating, setActivating] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -43,6 +61,8 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
   const [newName, setNewName] = useState('');
   const [description, setDescription] = useState('');
   const [programType, setProgramType] = useState<'primary' | 'supplementary'>('primary');
+  const [catalogQuery, setCatalogQuery] = useState('');
+  const [programExercises, setProgramExercises] = useState<SelectedProgramExercise[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -69,6 +89,10 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
       const res = await fetch('/api/programs', { method: 'POST', body: fd });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
+      setPrograms(prev => [{
+        ...json.data,
+        _count: { exercises: json.data.exercises?.length ?? 0 },
+      }, ...prev]);
       showSuccess('Program "' + newName + '" uploaded successfully!');
       setNewName('');
       setDescription('');
@@ -134,6 +158,111 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
       setError(e.message);
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const filteredCatalog = exerciseCatalog.filter(exercise => {
+    const query = catalogQuery.trim().toLowerCase();
+    if (!query) return true;
+
+    return [
+      exercise.exerciseName,
+      exercise.category,
+      exercise.equipment,
+      exercise.difficulty,
+      exercise.description,
+      ...exercise.primaryMuscles,
+      ...exercise.secondaryMuscles,
+    ].join(' ').toLowerCase().includes(query);
+  });
+
+  const addCatalogExercise = (exercise: ExerciseCatalogItem) => {
+    const dayCounts = programExercises.reduce<Record<string, number>>((acc, item) => {
+      acc[item.day] = (acc[item.day] ?? 0) + 1;
+      return acc;
+    }, {});
+    const day = dayOptions.find(option => (dayCounts[option] ?? 0) === 0) ?? dayOptions[0];
+
+    setProgramExercises(prev => [
+      ...prev,
+      {
+        instanceId: `${exercise.id}-${Date.now()}-${prev.length}`,
+        exerciseId: exercise.id,
+        day,
+        sets: '3',
+        reps: '10',
+        notes: exercise.instructions,
+      },
+    ]);
+  };
+
+  const updateProgramExercise = (
+    instanceId: string,
+    field: 'day' | 'sets' | 'reps' | 'notes',
+    value: string,
+  ) => {
+    setProgramExercises(prev => prev.map(item =>
+      item.instanceId === instanceId ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const removeProgramExercise = (instanceId: string) => {
+    setProgramExercises(prev => prev.filter(item => item.instanceId !== instanceId));
+  };
+
+  const handleCreateFromPool = async () => {
+    if (!newName.trim()) {
+      setError('Please enter a program name');
+      return;
+    }
+    if (programExercises.length === 0) {
+      setError('Please add at least one exercise from the pool');
+      return;
+    }
+
+    setCreatingFromPool(true);
+    setError('');
+
+    const orderByDay: Record<string, number> = {};
+    const exercises = programExercises.map(item => {
+      orderByDay[item.day] = (orderByDay[item.day] ?? 0) + 1;
+      return {
+        exerciseId: item.exerciseId,
+        day: item.day,
+        order: orderByDay[item.day],
+        sets: item.sets,
+        reps: item.reps,
+        notes: item.notes,
+      };
+    });
+
+    try {
+      const res = await fetch('/api/programs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newName.trim(),
+          description: description.trim(),
+          programType,
+          exercises,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      setPrograms(prev => [{
+        ...json.data,
+        _count: { exercises: json.data.exercises?.length ?? 0 },
+      }, ...prev]);
+      showSuccess('Program "' + newName + '" created from exercise pool!');
+      setNewName('');
+      setDescription('');
+      setProgramType('primary');
+      setProgramExercises([]);
+      router.refresh();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setCreatingFromPool(false);
     }
   };
 
@@ -275,10 +404,10 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
         )}
       </div>
 
-      {/* Upload new program */}
+      {/* Create new program */}
       <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="bg-indigo-600/20 border-b border-indigo-500/20 px-5 py-3">
-          <h2 className="text-white font-bold text-sm">Upload New Program</h2>
+          <h2 className="text-white font-bold text-sm">Create Program From Exercise Pool</h2>
         </div>
         <div className="p-5 space-y-3">
 
@@ -325,6 +454,122 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
             </label>
           </div>
 
+          <div>
+            <input
+              type="text"
+              placeholder="Search exercise pool"
+              value={catalogQuery}
+              onChange={e => setCatalogQuery(e.target.value)}
+              className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 transition"
+            />
+            <div className="mt-3 max-h-80 overflow-y-auto rounded-xl border border-white/[0.06] bg-black/10">
+              {filteredCatalog.length === 0 ? (
+                <p className="p-4 text-sm text-white/35">No exercises found.</p>
+              ) : filteredCatalog.map(exercise => (
+                <div key={exercise.id} className="flex items-center gap-3 border-b border-white/[0.04] p-3 last:border-b-0">
+                  <div className="h-12 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-white/[0.04]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={exercise.imageUrl} alt="" className="h-full w-full object-contain" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-white">{exercise.exerciseName}</p>
+                    <p className="truncate text-[10px] uppercase tracking-widest text-white/30">
+                      {exercise.category} · {muscleLabel(exercise.primaryMuscles)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => addCatalogExercise(exercise)}
+                    className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                  >
+                    Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
+                Selected exercises
+              </p>
+              <p className="text-[10px] text-white/30">{programExercises.length} total</p>
+            </div>
+
+            {programExercises.length === 0 ? (
+              <p className="py-4 text-center text-sm text-white/30">Add exercises from the pool above.</p>
+            ) : (
+              <div className="space-y-2">
+                {programExercises.map((item, index) => {
+                  const exercise = exerciseCatalog.find(ex => ex.id === item.exerciseId);
+                  if (!exercise) return null;
+
+                  return (
+                    <div key={item.instanceId} className="rounded-xl border border-white/[0.06] bg-black/10 p-3">
+                      <div className="mb-2 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-white">{index + 1}. {exercise.exerciseName}</p>
+                          <p className="text-[10px] uppercase tracking-widest text-white/30">{exercise.category}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeProgramExercise(item.instanceId)}
+                          className="rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs font-bold text-red-300 transition hover:bg-red-500/15"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <select
+                          value={item.day}
+                          onChange={e => updateProgramExercise(item.instanceId, 'day', e.target.value)}
+                          className="bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-indigo-500/50 transition"
+                        >
+                          {dayOptions.map(day => <option key={day} value={day}>{day}</option>)}
+                        </select>
+                        <input
+                          value={item.sets}
+                          onChange={e => updateProgramExercise(item.instanceId, 'sets', e.target.value)}
+                          placeholder="Sets"
+                          inputMode="numeric"
+                          className="min-w-0 bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 transition"
+                        />
+                        <input
+                          value={item.reps}
+                          onChange={e => updateProgramExercise(item.instanceId, 'reps', e.target.value)}
+                          placeholder="Reps"
+                          className="min-w-0 bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 transition"
+                        />
+                      </div>
+                      <input
+                        value={item.notes}
+                        onChange={e => updateProgramExercise(item.instanceId, 'notes', e.target.value)}
+                        placeholder="Notes"
+                        className="mt-2 w-full bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 transition"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleCreateFromPool}
+            disabled={creatingFromPool}
+            className="w-full bg-indigo-600 text-white rounded-xl py-2.5 font-medium hover:bg-indigo-700 disabled:opacity-50 transition">
+            {creatingFromPool ? 'Creating...' : 'Create Program'}
+          </button>
+        </div>
+      </div>
+
+      {/* Upload new program */}
+      <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div className="bg-white/[0.04] border-b border-white/[0.06] px-5 py-3">
+          <h2 className="text-white font-bold text-sm">Upload Program CSV</h2>
+        </div>
+        <div className="p-5 space-y-3">
           <div
             onClick={() => fileRef.current?.click()}
             className="cursor-pointer border border-dashed border-white/[0.1] rounded-xl p-6 text-center text-white/30 hover:border-indigo-500/40 transition">
