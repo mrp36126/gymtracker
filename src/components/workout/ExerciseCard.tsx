@@ -8,6 +8,34 @@ import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
 
 interface Props { exercise: Exercise; }
 
+function DetailImage({ src, alt, onOpen }: { src: string; alt: string; onOpen: () => void }) {
+  const [failed, setFailed] = useState(!src);
+
+  if (failed) {
+    return (
+      <div className="flex aspect-[16/9] w-full items-center justify-center rounded-xl border border-white/[0.06] bg-[#12121A]">
+        <svg width="24" height="24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path d="m21 15-5-5L5 21" />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="block aspect-[16/9] w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#12121A] text-left transition hover:border-white/[0.14]"
+      aria-label={`Open ${alt}`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} className="h-full w-full object-contain" onError={() => setFailed(true)} />
+    </button>
+  );
+}
+
 function getExerciseTargetLabel(muscleGroup: string, defaultReps: string) {
   const normalized = muscleGroup.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -154,8 +182,36 @@ export default function ExerciseCard({ exercise }: Props) {
         </div>
         <p className="text-xs text-white/30 mb-4">
           {exercise.defaultSets} sets - {targetLabel}
-          {exercise.notes ? ` - ${exercise.notes}` : ''}
         </p>
+
+        <details className="mb-4 rounded-xl border border-white/[0.06] bg-black/10 px-3 py-2">
+          <summary className="cursor-pointer text-xs font-bold text-white/60">Instructions and details</summary>
+          {exercise.notes?.trim() ? (
+            <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-white/45">{exercise.notes.trim()}</p>
+          ) : (
+            <p className="mt-2 text-xs leading-5 text-white/35">No extra instructions have been added for this exercise yet.</p>
+          )}
+
+          {detailImageUrl ? (
+            <div className="mt-3">
+              <DetailImage
+                src={detailImageUrl}
+                alt={`${exercise.name} details`}
+                onOpen={() => setDetailImageOpen(true)}
+              />
+            </div>
+          ) : null}
+
+          {mediaUrl ? (
+            <button
+              type="button"
+              onClick={() => isVideo ? setGuideOpen(true) : detailImageUrl ? setDetailImageOpen(true) : setGuideOpen(true)}
+              className="mt-3 inline-flex rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs font-bold text-white/55 transition hover:bg-white/[0.08] hover:text-white/75"
+            >
+              {isVideo ? 'Open full guide' : detailImageUrl ? 'Open detail image' : 'Open exercise image'}
+            </button>
+          ) : null}
+        </details>
 
         <SetLogger
           exerciseId={exercise.id}
