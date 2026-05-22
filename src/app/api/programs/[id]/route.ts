@@ -97,7 +97,7 @@ export async function PATCH(
         order: (lastExerciseForDay?.order ?? 0) + 1,
         defaultSets: input.addExercise.sets,
         defaultReps: input.addExercise.reps,
-        notes: input.addExercise.notes || catalogExercise.instructions,
+        notes: input.addExercise.notes || null,
         mediaUrl: catalogExercise.imageUrl || null,
         detailImageUrl: catalogExercise.detailImageUrl || null,
         programId: id,

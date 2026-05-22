@@ -40,7 +40,6 @@ export default function ProgramExerciseManager({ programId, initialExercises, ex
   const [day, setDay] = useState(defaultExerciseDay);
   const [sets, setSets] = useState('3');
   const [reps, setReps] = useState('10');
-  const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -61,7 +60,6 @@ export default function ProgramExerciseManager({ programId, initialExercises, ex
     ].join(' ').toLowerCase().includes(normalized));
   }, [exerciseCatalog, query]);
 
-  const selectedCatalogExercise = exerciseCatalog.find((exercise) => exercise.id === exerciseId);
   const byDay = groupByDay(exercises);
 
   const showSuccess = (message: string) => {
@@ -87,7 +85,6 @@ export default function ProgramExerciseManager({ programId, initialExercises, ex
             day,
             sets,
             reps,
-            notes: notes.trim(),
           },
         }),
       });
@@ -97,7 +94,6 @@ export default function ProgramExerciseManager({ programId, initialExercises, ex
       setExercises((prev) => [...prev, json.data.exercise].sort((a, b) =>
         dayOptions.indexOf(a.day) - dayOptions.indexOf(b.day) || a.order - b.order
       ));
-      setNotes('');
       showSuccess('Exercise added to ' + day + '.');
       router.refresh();
     } catch (err: any) {
@@ -225,13 +221,6 @@ export default function ProgramExerciseManager({ programId, initialExercises, ex
               className="rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/20 transition focus:outline-none focus:border-indigo-500/50"
             />
           </div>
-
-          <input
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder={selectedCatalogExercise?.instructions || 'Notes'}
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/20 transition focus:outline-none focus:border-indigo-500/50"
-          />
         </div>
 
         <div className="space-y-4 border-t border-white/[0.05] pt-4">
