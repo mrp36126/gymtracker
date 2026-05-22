@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
+import { loadExerciseCatalog } from '@/lib/exercise-catalog';
+import ProgramExerciseManager from '@/components/program/ProgramExerciseManager';
 
 export default async function ProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser();
@@ -23,6 +25,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
   if (!program) redirect('/program');
 
   const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const exerciseCatalog = user.isAdmin ? await loadExerciseCatalog() : [];
 
   const byDay = program.exercises.reduce((acc, ex) => {
     if (!acc[ex.day]) acc[ex.day] = [];
@@ -48,6 +51,14 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <div className="max-w-lg mx-auto px-5 pt-6">
+        {user.isAdmin && (
+          <ProgramExerciseManager
+            programId={program.id}
+            initialExercises={program.exercises}
+            exerciseCatalog={exerciseCatalog}
+          />
+        )}
+
         {dayOrder.filter(d => byDay[d]).map(day => (
           <div key={day} className="mb-6">
             <div className="flex items-center justify-between mb-3">
