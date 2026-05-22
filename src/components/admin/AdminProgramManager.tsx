@@ -482,7 +482,11 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                       aria-label={`Day for ${exercise.exerciseName}`}
                       className="min-w-0 rounded-lg border border-white/[0.08] bg-white/[0.06] px-2 py-2 text-xs text-white transition focus:outline-none focus:border-indigo-500/50"
                     >
-                      {dayOptions.map(day => <option key={day} value={day}>{day}</option>)}
+                      {dayOptions.map(day => (
+                        <option key={day} value={day} className="bg-gray-900 text-white">
+                          {day}
+                        </option>
+                      ))}
                     </select>
                     <button
                       type="button"
@@ -534,7 +538,11 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                           onChange={e => updateProgramExercise(item.instanceId, 'day', e.target.value)}
                           className="bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-indigo-500/50 transition"
                         >
-                          {dayOptions.map(day => <option key={day} value={day}>{day}</option>)}
+                          {dayOptions.map(day => (
+                            <option key={day} value={day} className="bg-gray-900 text-white">
+                              {day}
+                            </option>
+                          ))}
                         </select>
                         <input
                           value={item.sets}
