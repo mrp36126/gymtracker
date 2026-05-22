@@ -38,6 +38,7 @@ type SelectedProgramExercise = {
 };
 
 const dayOptions = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const defaultExerciseDay = dayOptions[0];
 
 function muscleLabel(muscles: string[]) {
   return muscles.length > 0 ? muscles.join(', ') : 'Not specified';
@@ -62,6 +63,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
   const [description, setDescription] = useState('');
   const [programType, setProgramType] = useState<'primary' | 'supplementary'>('primary');
   const [catalogQuery, setCatalogQuery] = useState('');
+  const [catalogDays, setCatalogDays] = useState<Record<string, string>>({});
   const [programExercises, setProgramExercises] = useState<SelectedProgramExercise[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -177,12 +179,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
   });
 
   const addCatalogExercise = (exercise: ExerciseCatalogItem) => {
-    const dayCounts = programExercises.reduce<Record<string, number>>((acc, item) => {
-      acc[item.day] = (acc[item.day] ?? 0) + 1;
-      return acc;
-    }, {});
-    const day = dayOptions.find(option => (dayCounts[option] ?? 0) === 0) ?? dayOptions[0];
-
+    const day = catalogDays[exercise.id] ?? defaultExerciseDay;
     setProgramExercises(prev => [
       ...prev,
       {
@@ -257,6 +254,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
       setNewName('');
       setDescription('');
       setProgramType('primary');
+      setCatalogDays({});
       setProgramExercises([]);
       router.refresh();
     } catch (e: any) {
@@ -466,7 +464,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
               {filteredCatalog.length === 0 ? (
                 <p className="p-4 text-sm text-white/35">No exercises found.</p>
               ) : filteredCatalog.map(exercise => (
-                <div key={exercise.id} className="flex items-center gap-3 border-b border-white/[0.04] p-3 last:border-b-0">
+                <div key={exercise.id} className="grid gap-3 border-b border-white/[0.04] p-3 last:border-b-0 sm:grid-cols-[auto_1fr_auto] sm:items-center">
                   <div className="h-12 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-white/[0.04]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={exercise.imageUrl} alt="" className="h-full w-full object-contain" />
@@ -477,13 +475,23 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                       {exercise.category} · {muscleLabel(exercise.primaryMuscles)}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => addCatalogExercise(exercise)}
-                    className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
-                  >
-                    Add
-                  </button>
+                  <div className="grid grid-cols-[1fr_auto] gap-2 sm:w-56">
+                    <select
+                      value={catalogDays[exercise.id] ?? defaultExerciseDay}
+                      onChange={e => setCatalogDays(prev => ({ ...prev, [exercise.id]: e.target.value }))}
+                      aria-label={`Day for ${exercise.exerciseName}`}
+                      className="min-w-0 rounded-lg border border-white/[0.08] bg-white/[0.06] px-2 py-2 text-xs text-white transition focus:outline-none focus:border-indigo-500/50"
+                    >
+                      {dayOptions.map(day => <option key={day} value={day}>{day}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => addCatalogExercise(exercise)}
+                      className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

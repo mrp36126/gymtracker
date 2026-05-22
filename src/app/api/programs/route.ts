@@ -8,10 +8,11 @@ import { loadExerciseCatalog } from '@/lib/exercise-catalog';
 import { z } from 'zod';
 
 const ProgramTypeSchema = z.enum(['primary', 'supplementary']).default('primary');
+const DaySchema = z.enum(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']);
 
 const SelectedExerciseSchema = z.object({
   exerciseId: z.string().min(1),
-  day: z.string().min(2).max(20),
+  day: DaySchema,
   order: z.coerce.number().int().positive(),
   sets: z.coerce.number().int().positive().max(20),
   reps: z.string().regex(/^\d+(-\d+)?$/, 'Reps must be e.g. 10 or 8-12'),
