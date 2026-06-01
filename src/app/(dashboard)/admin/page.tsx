@@ -16,6 +16,31 @@ export default async function AdminPage() {
     orderBy: { createdAt: 'desc' },
   });
 
+  const assignedPrograms = await prisma.program.findMany({
+    where: {
+      userId: { not: user.id },
+      isActive: true,
+    },
+    select: {
+      name: true,
+      programType: true,
+      user: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+    orderBy: [{ name: 'asc' }, { user: { name: 'asc' } }],
+  });
+
+  const programsWithAssignments = programs.map(program => ({
+    ...program,
+    assignedUsers: assignedPrograms
+      .filter(assignedProgram =>
+        assignedProgram.name === program.name
+        && assignedProgram.programType === program.programType
+      )
+      .map(assignedProgram => assignedProgram.user),
+  }));
+
   const users = await prisma.user.findMany({
     where: { id: { not: user.id } },
     select: { id: true, name: true, email: true, isAdmin: true },
@@ -69,7 +94,7 @@ export default async function AdminPage() {
         </div>
 
         <AdminProgramManager
-          programs={programs}
+          programs={programsWithAssignments}
           users={users}
           waitingUsers={waitingUsers}
           exerciseCatalog={exerciseCatalog}

@@ -12,6 +12,7 @@ interface Program {
   description?: string | null;
   programType: string;
   _count: { exercises: number };
+  assignedUsers?: AssignableUser[];
 }
 
 interface AssignableUser {
@@ -153,9 +154,22 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
     setError('');
     try {
       const res = await fetch('/api/programs/' + id, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
-      setPrograms(prev => prev.filter(p => p.id !== id));
-      showSuccess('"' + name + '" deleted.');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to delete');
+      const deletedProgram = programs.find(program => program.id === id);
+      setPrograms(prev => prev.filter(program =>
+        program.id !== id
+        && (
+          !deletedProgram
+          || program.name !== deletedProgram.name
+          || program.programType !== deletedProgram.programType
+        )
+      ));
+      const deletedCount = json.deletedProgramIds?.length ?? 1;
+      showSuccess(
+        '"' + name + '" deleted' +
+        (deletedCount > 1 ? ' for ' + deletedCount + ' program copies.' : '.')
+      );
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -286,6 +300,19 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
       if (!res.ok) throw new Error(json.error);
 
       const assignedUser = managedUsers.find(user => user.id === targetUserId);
+      if (assignedUser) {
+        setPrograms(prev => prev.map(existingProgram =>
+          existingProgram.name === program.name && existingProgram.programType === program.programType
+            ? {
+                ...existingProgram,
+                assignedUsers: [
+                  ...(existingProgram.assignedUsers ?? []).filter(user => user.id !== assignedUser.id),
+                  assignedUser,
+                ].sort((a, b) => a.name.localeCompare(b.name) || a.email.localeCompare(b.email)),
+              }
+            : existingProgram
+        ));
+      }
       if (program.programType === 'primary') {
         setPendingUsers(prev => prev.filter(user => user.id !== targetUserId));
       }
@@ -934,6 +961,24 @@ function ProgramRow({
           Active programs cannot be deleted. Set another program active first.
         </p>
       )}
+
+      <div className="mt-4 border-t border-white/[0.05] pt-4">
+        <p className="text-[10px] font-semibold tracking-widest text-white/25 uppercase mb-2">
+          Assigned users
+        </p>
+        {program.assignedUsers && program.assignedUsers.length > 0 ? (
+          <div className="space-y-1.5">
+            {program.assignedUsers.map(user => (
+              <div key={user.id} className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] px-3 py-2">
+                <p className="text-xs font-semibold text-white">{user.name}</p>
+                <p className="text-[10px] text-white/35">{user.email}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-white/30">No active user assignments.</p>
+        )}
+      </div>
     </div>
   );
 }

@@ -200,6 +200,40 @@ export async function DELETE(
     return NextResponse.json({ error: 'Cannot delete the active program' }, { status: 400 });
   }
 
-  await prisma.program.delete({ where: { id } });
-  return NextResponse.json({ success: true }, { status: 200 });
+  const deletedProgramIds = await prisma.$transaction(async (tx) => {
+    const affectedPrograms = await tx.program.findMany({
+      where: {
+        OR: [
+          { id },
+          {
+            userId: { not: user!.id },
+            name: program.name,
+            programType: program.programType,
+          },
+        ],
+      },
+      select: { id: true },
+    });
+    const affectedProgramIds = affectedPrograms.map((affectedProgram) => affectedProgram.id);
+
+    const affectedExercises = await tx.exercise.findMany({
+      where: { programId: { in: affectedProgramIds } },
+      select: { id: true },
+    });
+    const affectedExerciseIds = affectedExercises.map((exercise) => exercise.id);
+
+    if (affectedExerciseIds.length > 0) {
+      await tx.workoutLog.deleteMany({
+        where: { exerciseId: { in: affectedExerciseIds } },
+      });
+    }
+
+    await tx.program.deleteMany({
+      where: { id: { in: affectedProgramIds } },
+    });
+
+    return affectedProgramIds;
+  });
+
+  return NextResponse.json({ success: true, deletedProgramIds }, { status: 200 });
 }
