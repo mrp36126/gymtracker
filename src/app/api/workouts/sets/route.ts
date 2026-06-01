@@ -27,7 +27,8 @@ function getLogMode(muscleGroup: string, exerciseName: string): LogMode {
     return 'timeOnly';
   }
 
-  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)) {
+  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)
+    || ['running', 'rowing', 'cycling', 'skierg'].includes(normalizedName)) {
     return 'timeDistance';
   }
 

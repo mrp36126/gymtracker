@@ -23,6 +23,11 @@ function isTimeOnlyExercise(name: string) {
   return normalizedName === 'plank' || normalizedName === 'planks';
 }
 
+function isTimeDistanceExercise(name: string) {
+  const normalizedName = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  return ['running', 'rowing', 'cycling', 'skierg'].includes(normalizedName);
+}
+
 export default function ExerciseInstructionModal({
   open,
   onClose,
@@ -50,7 +55,11 @@ export default function ExerciseInstructionModal({
   if (!open) return null;
 
   const video = isVideoUrl(mediaUrl);
-  const target = isTimeOnlyExercise(name) ? 'time' : `${defaultReps} reps`;
+  const target = isTimeOnlyExercise(name)
+    ? 'time'
+    : isTimeDistanceExercise(name)
+      ? 'time and distance'
+      : `${defaultReps} reps`;
 
   return (
     <div

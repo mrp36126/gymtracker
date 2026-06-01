@@ -42,7 +42,8 @@ function getExerciseTargetLabel(muscleGroup: string, exerciseName: string, defau
     return 'time target';
   }
 
-  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)) {
+  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)
+    || ['running', 'rowing', 'cycling', 'skierg'].includes(normalizedName)) {
     return 'time and distance target';
   }
 
