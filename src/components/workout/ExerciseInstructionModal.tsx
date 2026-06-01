@@ -18,6 +18,11 @@ function isVideoUrl(url: string) {
   return lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.webm');
 }
 
+function isTimeOnlyExercise(name: string) {
+  const normalizedName = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  return normalizedName === 'plank' || normalizedName === 'planks';
+}
+
 export default function ExerciseInstructionModal({
   open,
   onClose,
@@ -45,6 +50,7 @@ export default function ExerciseInstructionModal({
   if (!open) return null;
 
   const video = isVideoUrl(mediaUrl);
+  const target = isTimeOnlyExercise(name) ? 'time' : `${defaultReps} reps`;
 
   return (
     <div
@@ -96,7 +102,7 @@ export default function ExerciseInstructionModal({
           <p className="text-sm text-white/50">
             Target: <span className="text-white/80 font-semibold">{defaultSets} sets</span>
             <span className="mx-2 text-white/20">·</span>
-            <span className="text-white/80 font-semibold">{defaultReps} reps</span>
+            <span className="text-white/80 font-semibold">{target}</span>
           </p>
           {notes && notes.trim() ? (
             <div>

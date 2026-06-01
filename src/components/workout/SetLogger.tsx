@@ -15,6 +15,7 @@ interface SetRow {
 
 interface Props {
   exerciseId: string;
+  exerciseName: string;
   muscleGroup: string;
   defaultSets: number;
   defaultReps: string;
@@ -22,14 +23,19 @@ interface Props {
   onSetComplete: (log: WorkoutLog) => void;
 }
 
-type LogMode = 'timeDistance' | 'weightDistance' | 'repsOnly' | 'strength';
+type LogMode = 'timeDistance' | 'timeOnly' | 'weightDistance' | 'repsOnly' | 'strength';
 
-function normalizeMuscleGroup(muscleGroup: string) {
-  return muscleGroup.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+function normalize(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-function getLogMode(muscleGroup: string): LogMode {
-  const normalized = normalizeMuscleGroup(muscleGroup);
+function getLogMode(muscleGroup: string, exerciseName: string): LogMode {
+  const normalized = normalize(muscleGroup);
+  const normalizedName = normalize(exerciseName);
+
+  if (normalizedName === 'plank' || normalizedName === 'planks') {
+    return 'timeOnly';
+  }
 
   if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)) {
     return 'timeDistance';
@@ -55,6 +61,7 @@ function formatDuration(seconds?: number | null) {
 
 export default function SetLogger({
   exerciseId,
+  exerciseName,
   muscleGroup,
   defaultSets,
   defaultReps,
@@ -62,11 +69,13 @@ export default function SetLogger({
   onSetComplete,
 }: Props) {
   const parseDefaultReps = (reps: string) => reps.includes('-') ? reps.split('-')[0] : reps;
-  const logMode = getLogMode(muscleGroup);
+  const logMode = getLogMode(muscleGroup, exerciseName);
   const isTimeDistance = logMode === 'timeDistance';
+  const isTimeOnly = logMode === 'timeOnly';
   const isWeightDistance = logMode === 'weightDistance';
   const isRepsOnly = logMode === 'repsOnly';
   const hasDistance = isTimeDistance || isWeightDistance;
+  const hasDuration = isTimeDistance || isTimeOnly;
   const hasWeight = logMode === 'strength' || isWeightDistance;
   const hasReps = logMode === 'strength' || isRepsOnly;
 
@@ -101,6 +110,11 @@ export default function SetLogger({
       return;
     }
 
+    if (isTimeOnly && (!setRow.durationMinutes || durationSeconds <= 0)) {
+      setError('Enter time first');
+      return;
+    }
+
     if (isWeightDistance && (!setRow.weight || !setRow.distanceKm)) {
       setError('Enter weight and distance first');
       return;
@@ -127,7 +141,7 @@ export default function SetLogger({
           setNumber: setRow.setNumber,
           ...(hasWeight ? { weight: parseFloat(setRow.weight) } : {}),
           ...(hasReps ? { reps: parseInt(setRow.reps) } : {}),
-          ...(isTimeDistance ? { durationSeconds } : {}),
+          ...(hasDuration ? { durationSeconds } : {}),
           ...(hasDistance ? { distanceKm: parseFloat(setRow.distanceKm) } : {}),
         }),
       });
@@ -192,14 +206,14 @@ export default function SetLogger({
       {/* Column headers */}
       <div
         className="grid items-center mb-1 px-1"
-        style={{ gridTemplateColumns: isRepsOnly ? '28px 1fr 1fr 36px' : '28px 1fr 1fr 1fr 36px' }}
+        style={{ gridTemplateColumns: isRepsOnly || isTimeOnly ? '28px 1fr 1fr 36px' : '28px 1fr 1fr 1fr 36px' }}
       >
         <div />
         <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">Previous</p>
         <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">
-          {isTimeDistance ? 'Min' : isRepsOnly ? 'Reps' : 'KG'}
+          {hasDuration ? 'Min' : isRepsOnly ? 'Reps' : 'KG'}
         </p>
-        {!isRepsOnly && (
+        {!isRepsOnly && !isTimeOnly && (
           <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">
             {hasDistance ? 'Dist' : 'Reps'}
           </p>
@@ -217,7 +231,7 @@ export default function SetLogger({
                 ? 'bg-emerald-500/10 border border-emerald-500/20'
                 : 'bg-white/[0.04] border border-white/[0.06]'
             }`}
-            style={{ gridTemplateColumns: isRepsOnly ? '28px 1fr 1fr 36px' : '28px 1fr 1fr 1fr 36px' }}
+            style={{ gridTemplateColumns: isRepsOnly || isTimeOnly ? '28px 1fr 1fr 36px' : '28px 1fr 1fr 1fr 36px' }}
           >
             {/* Set number */}
             <div className="text-center">
@@ -231,6 +245,10 @@ export default function SetLogger({
               {lastLog && isTimeDistance && lastLog.durationSeconds && lastLog.distanceKm ? (
                 <span className="text-[11px] text-white/25">
                   {formatDuration(lastLog.durationSeconds)} / {lastLog.distanceKm}
+                </span>
+              ) : lastLog && isTimeOnly && lastLog.durationSeconds ? (
+                <span className="text-[11px] text-white/25">
+                  {formatDuration(lastLog.durationSeconds)}
                 </span>
               ) : lastLog && isWeightDistance && lastLog.distanceKm !== null && lastLog.distanceKm !== undefined ? (
                 <span className="text-[11px] text-white/25">
@@ -258,10 +276,10 @@ export default function SetLogger({
               <input
                 type="number"
                 inputMode="decimal"
-                step={isTimeDistance ? '0.1' : isRepsOnly ? '1' : '0.5'}
-                min={isTimeDistance ? '0.1' : isRepsOnly ? '1' : '0'}
-                value={isTimeDistance ? setRow.durationMinutes : isRepsOnly ? setRow.reps : setRow.weight}
-                onChange={e => updateSet(setRow.id, isTimeDistance ? 'durationMinutes' : isRepsOnly ? 'reps' : 'weight', e.target.value)}
+                step={hasDuration ? '0.1' : isRepsOnly ? '1' : '0.5'}
+                min={hasDuration ? '0.1' : isRepsOnly ? '1' : '0'}
+                value={hasDuration ? setRow.durationMinutes : isRepsOnly ? setRow.reps : setRow.weight}
+                onChange={e => updateSet(setRow.id, hasDuration ? 'durationMinutes' : isRepsOnly ? 'reps' : 'weight', e.target.value)}
                 disabled={setRow.completed}
                 placeholder="0"
                 className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
@@ -270,7 +288,7 @@ export default function SetLogger({
               />
             </div>
 
-            {!isRepsOnly && (
+            {!isRepsOnly && !isTimeOnly && (
               <div className={`rounded-lg py-2 text-center border ${
                 setRow.completed
                   ? 'bg-emerald-500/5 border-emerald-500/10'

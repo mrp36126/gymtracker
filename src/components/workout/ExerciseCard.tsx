@@ -30,8 +30,17 @@ function DetailImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-function getExerciseTargetLabel(muscleGroup: string, defaultReps: string) {
-  const normalized = muscleGroup.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+function normalize(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function getExerciseTargetLabel(muscleGroup: string, exerciseName: string, defaultReps: string) {
+  const normalized = normalize(muscleGroup);
+  const normalizedName = normalize(exerciseName);
+
+  if (normalizedName === 'plank' || normalizedName === 'planks') {
+    return 'time target';
+  }
 
   if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)) {
     return 'time and distance target';
@@ -64,7 +73,7 @@ export default function ExerciseCard({ exercise }: Props) {
   const mediaPath = mediaUrl.split('?')[0] ?? '';
   const isVideo = /\.(mp4|mov|webm)$/i.test(mediaPath);
   const isExerciseTimerActive = activeExerciseId === exercise.id;
-  const targetLabel = getExerciseTargetLabel(exercise.muscleGroup, exercise.defaultReps);
+  const targetLabel = getExerciseTargetLabel(exercise.muscleGroup, exercise.name, exercise.defaultReps);
 
   return (
     <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden mb-4 w-full">
@@ -198,6 +207,7 @@ export default function ExerciseCard({ exercise }: Props) {
 
         <SetLogger
           exerciseId={exercise.id}
+          exerciseName={exercise.name}
           muscleGroup={exercise.muscleGroup}
           defaultSets={exercise.defaultSets}
           defaultReps={exercise.defaultReps}

@@ -13,14 +13,19 @@ const SetSchema = z.object({
   distanceKm: z.number().positive().optional(),
 });
 
-type LogMode = 'timeDistance' | 'weightDistance' | 'repsOnly' | 'strength';
+type LogMode = 'timeDistance' | 'timeOnly' | 'weightDistance' | 'repsOnly' | 'strength';
 
-function normalizeMuscleGroup(muscleGroup: string) {
-  return muscleGroup.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+function normalize(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-function getLogMode(muscleGroup: string): LogMode {
-  const normalized = normalizeMuscleGroup(muscleGroup);
+function getLogMode(muscleGroup: string, exerciseName: string): LogMode {
+  const normalized = normalize(muscleGroup);
+  const normalizedName = normalize(exerciseName);
+
+  if (normalizedName === 'plank' || normalizedName === 'planks') {
+    return 'timeOnly';
+  }
 
   if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)) {
     return 'timeDistance';
@@ -63,10 +68,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
   }
 
-  const logMode = getLogMode(exercise.muscleGroup);
+  const logMode = getLogMode(exercise.muscleGroup, exercise.name);
 
   if (logMode === 'timeDistance' && (!body.durationSeconds || !body.distanceKm)) {
     return NextResponse.json({ error: 'Enter time and distance first' }, { status: 422 });
+  }
+
+  if (logMode === 'timeOnly' && !body.durationSeconds) {
+    return NextResponse.json({ error: 'Enter time first' }, { status: 422 });
   }
 
   if (logMode === 'weightDistance' && (body.weight === undefined || !body.distanceKm)) {
@@ -83,10 +92,10 @@ export async function POST(req: NextRequest) {
 
   const log = await prisma.workoutLog.create({
     data: {
-      weight:     logMode === 'timeDistance' || logMode === 'repsOnly' ? 0 : body.weight!,
+      weight:     logMode === 'timeDistance' || logMode === 'timeOnly' || logMode === 'repsOnly' ? 0 : body.weight!,
       sets:       1,
-      reps:       logMode === 'timeDistance' || logMode === 'weightDistance' ? 1 : body.reps!,
-      durationSeconds: logMode === 'timeDistance' ? body.durationSeconds : null,
+      reps:       logMode === 'timeDistance' || logMode === 'timeOnly' || logMode === 'weightDistance' ? 1 : body.reps!,
+      durationSeconds: logMode === 'timeDistance' || logMode === 'timeOnly' ? body.durationSeconds : null,
       distanceKm: logMode === 'timeDistance' || logMode === 'weightDistance' ? body.distanceKm : null,
       notes:      `Set ${body.setNumber}`,
       userId:     user!.id,
