@@ -17,8 +17,12 @@ const PatchProgramSchema = z.object({
     notes: z.string().max(1000).optional().default(''),
   }).optional(),
   removeExerciseId: z.string().min(1).optional(),
-}).refine((value) => value.name || value.addExercise || value.removeExerciseId, {
-  message: 'Provide a program name, exercise to add, or exercise to remove',
+  reorderExercises: z.object({
+    day: DaySchema,
+    exerciseIds: z.array(z.string().min(1)).min(1),
+  }).optional(),
+}).refine((value) => value.name || value.addExercise || value.removeExerciseId || value.reorderExercises, {
+  message: 'Provide a program name, exercise to add, exercise to remove, or exercise order',
 });
 
 // GET single program
@@ -134,6 +138,39 @@ export async function PATCH(
     });
 
     return NextResponse.json({ data: { removedExerciseId: exercise.id } });
+  }
+
+  if (input.reorderExercises) {
+    const { day, exerciseIds } = input.reorderExercises;
+    const uniqueExerciseIds = new Set(exerciseIds);
+    if (uniqueExerciseIds.size !== exerciseIds.length) {
+      return NextResponse.json({ error: 'Exercise order contains duplicates' }, { status: 400 });
+    }
+
+    const exercisesForDay = await prisma.exercise.findMany({
+      where: { programId: id, day },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+    const currentExerciseIds = new Set(exercisesForDay.map((exercise) => exercise.id));
+
+    const hasSameExercises = exerciseIds.length === exercisesForDay.length
+      && exerciseIds.every((exerciseId) => currentExerciseIds.has(exerciseId));
+
+    if (!hasSameExercises) {
+      return NextResponse.json({ error: 'Exercise order must include every exercise for the selected day' }, { status: 400 });
+    }
+
+    const exercises = await prisma.$transaction(
+      exerciseIds.map((exerciseId, index) =>
+        prisma.exercise.update({
+          where: { id: exerciseId },
+          data: { order: index + 1 },
+        })
+      )
+    );
+
+    return NextResponse.json({ data: { exercises } });
   }
 
   const program = await prisma.program.update({

@@ -24,8 +24,14 @@ interface Props {
 const dayOptions = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const defaultExerciseDay = dayOptions[0];
 
+function sortExercises(exercises: ProgramExercise[]) {
+  return [...exercises].sort((a, b) =>
+    dayOptions.indexOf(a.day) - dayOptions.indexOf(b.day) || a.order - b.order
+  );
+}
+
 function groupByDay(exercises: ProgramExercise[]) {
-  return exercises.reduce<Record<string, ProgramExercise[]>>((acc, exercise) => {
+  return sortExercises(exercises).reduce<Record<string, ProgramExercise[]>>((acc, exercise) => {
     if (!acc[exercise.day]) acc[exercise.day] = [];
     acc[exercise.day].push(exercise);
     return acc;
@@ -42,6 +48,7 @@ export default function ProgramExerciseManager({ programId, initialExercises, ex
   const [reps, setReps] = useState('10');
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -91,9 +98,7 @@ export default function ProgramExerciseManager({ programId, initialExercises, ex
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to add exercise');
 
-      setExercises((prev) => [...prev, json.data.exercise].sort((a, b) =>
-        dayOptions.indexOf(a.day) - dayOptions.indexOf(b.day) || a.order - b.order
-      ));
+      setExercises((prev) => sortExercises([...prev, json.data.exercise]));
       showSuccess('Exercise added to ' + day + '.');
       router.refresh();
     } catch (err: any) {
@@ -125,6 +130,60 @@ export default function ProgramExerciseManager({ programId, initialExercises, ex
     } finally {
       setRemovingId(null);
     }
+  };
+
+  const handleReorderDay = async (
+    dayName: string,
+    orderedExercises: ProgramExercise[],
+    movedExerciseId: string,
+  ) => {
+    setReorderingId(movedExerciseId);
+    setError('');
+    try {
+      const res = await fetch('/api/programs/' + programId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reorderExercises: {
+            day: dayName,
+            exerciseIds: orderedExercises.map((exercise) => exercise.id),
+          },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to reorder exercises');
+
+      setExercises((prev) => {
+        const updatedExercises = json.data.exercises as ProgramExercise[];
+        const updatedById = new Map<string, ProgramExercise>(
+          updatedExercises.map((exercise) => [exercise.id, exercise])
+        );
+
+        return sortExercises(prev.map((exercise) =>
+          updatedById.get(exercise.id) ?? exercise
+        ));
+      });
+      showSuccess('Exercise order updated.');
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setReorderingId(null);
+    }
+  };
+
+  const moveExercise = (exercise: ProgramExercise, targetIndex: number) => {
+    const currentDayExercises = byDay[exercise.day] ?? [];
+    const currentIndex = currentDayExercises.findIndex((item) => item.id === exercise.id);
+    if (currentIndex === -1 || targetIndex < 0 || targetIndex >= currentDayExercises.length || targetIndex === currentIndex) {
+      return;
+    }
+
+    const nextExercises = [...currentDayExercises];
+    const [movedExercise] = nextExercises.splice(currentIndex, 1);
+    nextExercises.splice(targetIndex, 0, movedExercise);
+
+    handleReorderDay(exercise.day, nextExercises, exercise.id);
   };
 
   return (
@@ -228,22 +287,55 @@ export default function ProgramExerciseManager({ programId, initialExercises, ex
             <div key={option}>
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-white/30">{option}</p>
               <div className="space-y-2">
-                {byDay[option].map((exercise) => (
+                {byDay[option].map((exercise, index) => (
                   <div key={exercise.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-black/10 px-3 py-2.5">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-white">{exercise.name}</p>
+                      <p className="truncate text-sm font-semibold text-white">
+                        {index + 1}. {exercise.name}
+                      </p>
                       <p className="text-[10px] uppercase tracking-widest text-white/30">
                         {exercise.muscleGroup} · {exercise.defaultSets} sets x {exercise.defaultReps} reps
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveExercise(exercise)}
-                      disabled={removingId === exercise.id}
-                      className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-300 transition hover:bg-red-500/15 disabled:opacity-50"
-                    >
-                      {removingId === exercise.id ? 'Removing...' : 'Remove'}
-                    </button>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => moveExercise(exercise, index - 1)}
+                        disabled={index === 0 || reorderingId === exercise.id}
+                        className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-xs font-bold text-white/45 transition hover:bg-white/[0.08] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        Up
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveExercise(exercise, index + 1)}
+                        disabled={index === byDay[option].length - 1 || reorderingId === exercise.id}
+                        className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-xs font-bold text-white/45 transition hover:bg-white/[0.08] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        Down
+                      </button>
+                      <select
+                        value={index}
+                        onChange={(event) => moveExercise(exercise, Number(event.target.value))}
+                        disabled={reorderingId === exercise.id}
+                        aria-label={`Position for ${exercise.name}`}
+                        className="rounded-lg border border-white/[0.08] bg-white/[0.06] px-2 py-1.5 text-xs text-white transition focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
+                      >
+                        {byDay[option].map((_, positionIndex) => (
+                          <option key={positionIndex} value={positionIndex} className="bg-gray-900 text-white">
+                            Position {positionIndex + 1}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExercise(exercise)}
+                        disabled={removingId === exercise.id || reorderingId === exercise.id}
+                        className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-300 transition hover:bg-red-500/15 disabled:opacity-50"
+                      >
+                        {removingId === exercise.id ? 'Removing...' : 'Remove'}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
