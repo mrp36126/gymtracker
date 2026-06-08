@@ -148,7 +148,7 @@ export default async function WelcomePage() {
           </div>
         )}
 
-        {otherSupplementaryPrograms.length > 0 && (
+        {user.isAdmin && otherSupplementaryPrograms.length > 0 && (
           <div className="mb-4">
             <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-3">Additional Programs</p>
             <div className="space-y-3">
@@ -169,22 +169,20 @@ export default async function WelcomePage() {
           </div>
         )}
 
-        <div className={`grid gap-3 mb-4 ${(activeProgram || user.isAdmin) ? 'grid-cols-3' : 'grid-cols-1'}`}>
-          {(activeProgram || user.isAdmin) && (
-            <>
-              <Link href="/progress" className="block">
-                <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
-                  <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
-                  <p className="text-lg font-extrabold text-white">Charts</p>
-                </div>
-              </Link>
-              <Link href="/program" className="block">
-                <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
-                  <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Program</p>
-                  <p className="text-lg font-extrabold text-white">Plan</p>
-                </div>
-              </Link>
-            </>
+        <div className={`grid gap-3 mb-4 ${user.isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <Link href="/progress" className="block">
+            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+              <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
+              <p className="text-lg font-extrabold text-white">Charts</p>
+            </div>
+          </Link>
+          {user.isAdmin && (
+            <Link href="/program" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Program</p>
+                <p className="text-lg font-extrabold text-white">Plan</p>
+              </div>
+            </Link>
           )}
           <Link href="/leaderboard" className="block">
             <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition">
