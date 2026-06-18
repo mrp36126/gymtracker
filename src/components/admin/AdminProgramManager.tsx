@@ -21,6 +21,7 @@ interface AssignableUser {
   email: string;
   isAdmin?: boolean;
   isTrainer?: boolean;
+  isTrainerUser?: boolean;
 }
 
 interface Props {
@@ -331,7 +332,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
 
   const handleRoleChange = async (
     targetUser: AssignableUser,
-    updates: { isAdmin?: boolean; isTrainer?: boolean },
+    updates: { isAdmin?: boolean; isTrainer?: boolean; isTrainerUser?: boolean },
     successMessage: string
   ) => {
     setUpdatingRole(targetUser.id);
@@ -709,9 +710,9 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-bold text-white">{user.name}</p>
-                  {!user.isAdmin && !user.isTrainer && (
+                  {!user.isAdmin && !user.isTrainer && !user.isTrainerUser && (
                     <span className="text-[10px] font-bold text-slate-300 bg-slate-500/10 border border-slate-500/20 px-2 py-0.5 rounded-full">
-                      Individual
+                      Individual User
                     </span>
                   )}
                   {user.isAdmin && (
@@ -724,6 +725,11 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                       Trainer
                     </span>
                   )}
+                  {user.isTrainerUser && (
+                    <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                      Trainer User
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-white/40 mt-1">{user.email}</p>
               </div>
@@ -731,42 +737,58 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                 <button
                   onClick={() => handleRoleChange(
                     user,
-                    { isAdmin: !user.isAdmin },
-                    !user.isAdmin ? 'is now an admin.' : 'is no longer an admin.'
+                    { isAdmin: true, isTrainer: false, isTrainerUser: false },
+                    'is now an admin.'
                   )}
                   disabled={updatingRole === user.id || deletingUser === user.id}
                   className={
                     'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
                     (user.isAdmin
-                      ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                      ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/30'
                       : 'bg-cyan-600 text-white hover:bg-cyan-700')
                   }
                 >
-                  {updatingRole === user.id ? 'Updating...' : (user.isAdmin ? 'Remove Admin' : 'Make Admin')}
+                  {updatingRole === user.id ? 'Updating...' : 'Make Admin'}
                 </button>
                 <button
                   onClick={() => handleRoleChange(
                     user,
-                    { isTrainer: !user.isTrainer },
-                    !user.isTrainer ? 'is now a trainer user.' : 'is no longer a trainer user.'
+                    { isAdmin: false, isTrainer: true, isTrainerUser: false },
+                    'is now a trainer.'
                   )}
                   disabled={updatingRole === user.id || deletingUser === user.id}
                   className={
                     'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
                     (user.isTrainer
-                      ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                      ? 'bg-violet-500/20 text-violet-200 border border-violet-500/30'
                       : 'bg-violet-600 text-white hover:bg-violet-700')
                   }
                 >
-                  {updatingRole === user.id ? 'Updating...' : (user.isTrainer ? 'Remove Trainer User' : 'Make Trainer User')}
+                  {updatingRole === user.id ? 'Updating...' : 'Make Trainer'}
                 </button>
                 <button
                   onClick={() => handleRoleChange(
                     user,
-                    { isAdmin: false, isTrainer: false },
+                    { isAdmin: false, isTrainer: false, isTrainerUser: true },
+                    'is now a trainer user.'
+                  )}
+                  disabled={updatingRole === user.id || deletingUser === user.id}
+                  className={
+                    'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
+                    (user.isTrainerUser
+                      ? 'bg-amber-500/20 text-amber-200 border border-amber-500/30'
+                      : 'bg-amber-600 text-white hover:bg-amber-700')
+                  }
+                >
+                  {updatingRole === user.id ? 'Updating...' : 'Make Trainer User'}
+                </button>
+                <button
+                  onClick={() => handleRoleChange(
+                    user,
+                    { isAdmin: false, isTrainer: false, isTrainerUser: false },
                     'is now an individual user.'
                   )}
-                  disabled={updatingRole === user.id || deletingUser === user.id || (!user.isAdmin && !user.isTrainer)}
+                  disabled={updatingRole === user.id || deletingUser === user.id || (!user.isAdmin && !user.isTrainer && !user.isTrainerUser)}
                   className="text-xs bg-slate-600 text-white px-3 py-2 rounded-lg hover:bg-slate-700 disabled:opacity-50 transition"
                 >
                   {updatingRole === user.id ? 'Updating...' : 'Make Individual User'}

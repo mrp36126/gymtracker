@@ -43,7 +43,7 @@ export default async function AdminPage() {
 
   const users = await prisma.user.findMany({
     where: { id: { not: user.id } },
-    select: { id: true, name: true, email: true, isAdmin: true, isTrainer: true },
+    select: { id: true, name: true, email: true, isAdmin: true, isTrainer: true, isTrainerUser: true },
     orderBy: [{ name: 'asc' }, { email: 'asc' }],
   });
 
@@ -57,7 +57,7 @@ export default async function AdminPage() {
         },
       },
     },
-    select: { id: true, name: true, email: true, isAdmin: true, isTrainer: true },
+    select: { id: true, name: true, email: true, isAdmin: true, isTrainer: true, isTrainerUser: true },
     orderBy: [{ createdAt: 'asc' }],
   });
 

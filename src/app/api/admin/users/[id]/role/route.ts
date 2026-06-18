@@ -6,7 +6,8 @@ import { prisma } from '@/lib/prisma';
 const RoleSchema = z.object({
   isAdmin: z.boolean().optional(),
   isTrainer: z.boolean().optional(),
-}).refine((data) => data.isAdmin !== undefined || data.isTrainer !== undefined, {
+  isTrainerUser: z.boolean().optional(),
+}).refine((data) => data.isAdmin !== undefined || data.isTrainer !== undefined || data.isTrainerUser !== undefined, {
   message: 'At least one role field must be provided',
 });
 
@@ -45,11 +46,12 @@ export async function PATCH(
   const data: Record<string, boolean> = {};
   if (input.isAdmin !== undefined) data.isAdmin = input.isAdmin;
   if (input.isTrainer !== undefined) data.isTrainer = input.isTrainer;
+  if (input.isTrainerUser !== undefined) data.isTrainerUser = input.isTrainerUser;
 
   const updatedUser = await prisma.user.update({
     where: { id },
     data,
-    select: { id: true, name: true, email: true, isAdmin: true, isTrainer: true },
+    select: { id: true, name: true, email: true, isAdmin: true, isTrainer: true, isTrainerUser: true },
   });
 
   return NextResponse.json({ data: updatedUser });
