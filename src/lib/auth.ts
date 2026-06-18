@@ -8,9 +8,26 @@ export async function getAuthUser() {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return null;
 
-    const dbUser = await prisma.user.findUnique({
+    let dbUser = await prisma.user.findUnique({
       where: { supabaseId: user.id },
     });
+
+    if (!dbUser) {
+      const name =
+        (user.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name
+        || (user.user_metadata as { full_name?: string; name?: string } | undefined)?.name
+        || user.email
+        || 'Unknown';
+
+      dbUser = await prisma.user.create({
+        data: {
+          supabaseId: user.id,
+          name,
+          email: user.email ?? `${user.id}@unknown`,
+        },
+      });
+    }
+
     return dbUser;
   } catch {
     return null;
