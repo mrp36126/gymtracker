@@ -331,8 +331,8 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
 
   const handleRoleChange = async (
     targetUser: AssignableUser,
-    role: 'isAdmin' | 'isTrainer',
-    value: boolean
+    updates: { isAdmin?: boolean; isTrainer?: boolean },
+    successMessage: string
   ) => {
     setUpdatingRole(targetUser.id);
     setError('');
@@ -340,18 +340,14 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
       const res = await fetch('/api/admin/users/' + targetUser.id + '/role', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [role]: value }),
+        body: JSON.stringify(updates),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setManagedUsers(prev => prev.map(user =>
-        user.id === targetUser.id ? { ...user, [role]: value } : user
+        user.id === targetUser.id ? { ...user, ...updates } : user
       ));
-      const roleName = role === 'isAdmin' ? 'admin' : 'trainer';
-      showSuccess(
-        targetUser.name +
-        (value ? ` is now a ${roleName}.` : ` is no longer a ${roleName}.`)
-      );
+      showSuccess(targetUser.name + ' ' + successMessage);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -713,6 +709,11 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-bold text-white">{user.name}</p>
+                  {!user.isAdmin && !user.isTrainer && (
+                    <span className="text-[10px] font-bold text-slate-300 bg-slate-500/10 border border-slate-500/20 px-2 py-0.5 rounded-full">
+                      Individual
+                    </span>
+                  )}
                   {user.isAdmin && (
                     <span className="text-[10px] font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
                       Admin
@@ -728,7 +729,11 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => handleRoleChange(user, 'isAdmin', !user.isAdmin)}
+                  onClick={() => handleRoleChange(
+                    user,
+                    { isAdmin: !user.isAdmin },
+                    !user.isAdmin ? 'is now an admin.' : 'is no longer an admin.'
+                  )}
                   disabled={updatingRole === user.id || deletingUser === user.id}
                   className={
                     'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
@@ -740,7 +745,11 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                   {updatingRole === user.id ? 'Updating...' : (user.isAdmin ? 'Remove Admin' : 'Make Admin')}
                 </button>
                 <button
-                  onClick={() => handleRoleChange(user, 'isTrainer', !user.isTrainer)}
+                  onClick={() => handleRoleChange(
+                    user,
+                    { isTrainer: !user.isTrainer },
+                    !user.isTrainer ? 'is now a trainer user.' : 'is no longer a trainer user.'
+                  )}
                   disabled={updatingRole === user.id || deletingUser === user.id}
                   className={
                     'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
@@ -749,7 +758,18 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                       : 'bg-violet-600 text-white hover:bg-violet-700')
                   }
                 >
-                  {updatingRole === user.id ? 'Updating...' : (user.isTrainer ? 'Remove Trainer' : 'Make Trainer')}
+                  {updatingRole === user.id ? 'Updating...' : (user.isTrainer ? 'Remove Trainer User' : 'Make Trainer User')}
+                </button>
+                <button
+                  onClick={() => handleRoleChange(
+                    user,
+                    { isAdmin: false, isTrainer: false },
+                    'is now an individual user.'
+                  )}
+                  disabled={updatingRole === user.id || deletingUser === user.id || (!user.isAdmin && !user.isTrainer)}
+                  className="text-xs bg-slate-600 text-white px-3 py-2 rounded-lg hover:bg-slate-700 disabled:opacity-50 transition"
+                >
+                  {updatingRole === user.id ? 'Updating...' : 'Make Individual User'}
                 </button>
                 <button
                   onClick={() => handleDeleteUser(user)}
