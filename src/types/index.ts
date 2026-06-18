@@ -5,6 +5,8 @@ export interface User {
   name: string;
   email: string;
   supabaseId: string;
+  isAdmin: boolean;
+  isTrainer: boolean;
 }
 
 export interface Program {

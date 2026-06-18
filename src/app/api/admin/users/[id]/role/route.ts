@@ -4,7 +4,10 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 const RoleSchema = z.object({
-  isAdmin: z.boolean(),
+  isAdmin: z.boolean().optional(),
+  isTrainer: z.boolean().optional(),
+}).refine((data) => data.isAdmin !== undefined || data.isTrainer !== undefined, {
+  message: 'At least one role field must be provided',
 });
 
 export async function PATCH(
@@ -26,8 +29,8 @@ export async function PATCH(
   let input;
   try {
     input = RoleSchema.parse(await req.json());
-  } catch {
-    return NextResponse.json({ error: 'isAdmin must be a boolean' }, { status: 400 });
+  } catch (err) {
+    return NextResponse.json({ error: (err instanceof Error ? err.message : 'Invalid role data') }, { status: 400 });
   }
 
   const targetUser = await prisma.user.findUnique({
@@ -39,10 +42,14 @@ export async function PATCH(
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
+  const data: Record<string, boolean> = {};
+  if (input.isAdmin !== undefined) data.isAdmin = input.isAdmin;
+  if (input.isTrainer !== undefined) data.isTrainer = input.isTrainer;
+
   const updatedUser = await prisma.user.update({
     where: { id },
-    data: { isAdmin: input.isAdmin },
-    select: { id: true, name: true, email: true, isAdmin: true },
+    data,
+    select: { id: true, name: true, email: true, isAdmin: true, isTrainer: true },
   });
 
   return NextResponse.json({ data: updatedUser });

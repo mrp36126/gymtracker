@@ -20,6 +20,7 @@ interface AssignableUser {
   name: string;
   email: string;
   isAdmin?: boolean;
+  isTrainer?: boolean;
 }
 
 interface Props {
@@ -328,21 +329,29 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
     }
   };
 
-  const handleRoleChange = async (targetUser: AssignableUser, isAdmin: boolean) => {
+  const handleRoleChange = async (
+    targetUser: AssignableUser,
+    role: 'isAdmin' | 'isTrainer',
+    value: boolean
+  ) => {
     setUpdatingRole(targetUser.id);
     setError('');
     try {
       const res = await fetch('/api/admin/users/' + targetUser.id + '/role', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isAdmin }),
+        body: JSON.stringify({ [role]: value }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setManagedUsers(prev => prev.map(user =>
-        user.id === targetUser.id ? { ...user, isAdmin } : user
+        user.id === targetUser.id ? { ...user, [role]: value } : user
       ));
-      showSuccess(targetUser.name + (isAdmin ? ' is now an admin.' : ' is no longer an admin.'));
+      const roleName = role === 'isAdmin' ? 'admin' : 'trainer';
+      showSuccess(
+        targetUser.name +
+        (value ? ` is now a ${roleName}.` : ` is no longer a ${roleName}.`)
+      );
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -709,12 +718,17 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                       Admin
                     </span>
                   )}
+                  {user.isTrainer && (
+                    <span className="text-[10px] font-bold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">
+                      Trainer
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-white/40 mt-1">{user.email}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => handleRoleChange(user, !user.isAdmin)}
+                  onClick={() => handleRoleChange(user, 'isAdmin', !user.isAdmin)}
                   disabled={updatingRole === user.id || deletingUser === user.id}
                   className={
                     'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
@@ -723,11 +737,19 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                       : 'bg-cyan-600 text-white hover:bg-cyan-700')
                   }
                 >
-                  {updatingRole === user.id
-                    ? 'Updating...'
-                    : user.isAdmin
-                      ? 'Remove Admin'
-                      : 'Make Admin'}
+                  {updatingRole === user.id ? 'Updating...' : (user.isAdmin ? 'Remove Admin' : 'Make Admin')}
+                </button>
+                <button
+                  onClick={() => handleRoleChange(user, 'isTrainer', !user.isTrainer)}
+                  disabled={updatingRole === user.id || deletingUser === user.id}
+                  className={
+                    'text-xs px-3 py-2 rounded-lg transition disabled:opacity-50 ' +
+                    (user.isTrainer
+                      ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                      : 'bg-violet-600 text-white hover:bg-violet-700')
+                  }
+                >
+                  {updatingRole === user.id ? 'Updating...' : (user.isTrainer ? 'Remove Trainer' : 'Make Trainer')}
                 </button>
                 <button
                   onClick={() => handleDeleteUser(user)}
