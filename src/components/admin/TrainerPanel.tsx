@@ -24,7 +24,6 @@ interface Program {
 }
 
 interface Props {
-  trainerId: string;
   programs: Program[];
   assignedUsers: TrainerUser[];
   availableUsers: TrainerUser[];
@@ -48,7 +47,7 @@ function muscleLabel(muscles: string[]) {
   return muscles.length > 0 ? muscles.join(', ') : 'Not specified';
 }
 
-export default function TrainerPanel({ trainerId, programs, assignedUsers, availableUsers, assignedPrograms, exerciseCatalog }: Props) {
+export default function TrainerPanel({ programs, assignedUsers, availableUsers, assignedPrograms, exerciseCatalog }: Props) {
   const router = useRouter();
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [error, setError] = useState('');

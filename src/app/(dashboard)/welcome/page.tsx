@@ -43,7 +43,9 @@ export default async function WelcomePage() {
       where: { isActive: true, programType: 'supplementary', userId: user.id },
       orderBy: { name: 'asc' },
     });
-  } catch (err) {}
+  } catch {
+    // ignore transient data fetch issues and render the fallback cards
+  }
 
   const hyroxProgram = supplementaryPrograms.find((program: any) =>
     program.name.toLowerCase().includes('hyrox')
@@ -121,14 +123,16 @@ export default async function WelcomePage() {
               </div>
             </Link>
 
-            <Link href="/custom-workout" className="block">
-              <div className="relative bg-white/[0.04] border border-emerald-500/20 rounded-2xl p-5 hover:border-emerald-500/40 hover:bg-white/[0.06] transition">
-                <p className="text-xs font-semibold tracking-widest text-emerald-300/60 uppercase mb-2">Flexible Session</p>
-                <p className="text-xl font-extrabold text-white tracking-tight">I Want To Do My Own Program Today</p>
-                <p className="text-sm text-white/45 mt-1">Build a workout one exercise at a time from the exercise catalog.</p>
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-emerald-300/50 text-xl">-&gt;</div>
-              </div>
-            </Link>
+            {canUseCustomWorkout(user) && (
+              <Link href="/custom-workout" className="block">
+                <div className="relative bg-white/[0.04] border border-emerald-500/20 rounded-2xl p-5 hover:border-emerald-500/40 hover:bg-white/[0.06] transition">
+                  <p className="text-xs font-semibold tracking-widest text-emerald-300/60 uppercase mb-2">Flexible Session</p>
+                  <p className="text-xl font-extrabold text-white tracking-tight">I Want To Do My Own Program Today</p>
+                  <p className="text-sm text-white/45 mt-1">Build a workout one exercise at a time from the exercise catalog.</p>
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2 text-emerald-300/50 text-xl">-&gt;</div>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
 

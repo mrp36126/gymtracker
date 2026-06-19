@@ -52,7 +52,6 @@ export default async function AdminPage() {
 
         <div className="max-w-2xl mx-auto px-5 pt-6">
           <TrainerPanel
-            trainerId={user.id}
             programs={programs}
             assignedUsers={assignedUsers}
             availableUsers={availableUsers}

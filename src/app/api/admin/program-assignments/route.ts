@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { canManageProgram, canViewProgram } from '@/lib/program-scope';
+import { canManageProgram } from '@/lib/program-scope';
 import { isAdmin, isTrainer } from '@/lib/rbac';
 
 const AssignmentSchema = z.object({
@@ -29,7 +29,6 @@ export async function POST(req: NextRequest) {
     prisma.program.findFirst({
       where: { id: input.sourceProgramId },
       include: { user: { select: { id: true, trainerId: true, isAdmin: true, isTrainer: true, isTrainerUser: true } }, exercises: true },
-      include: { exercises: true },
     }),
     prisma.user.findUnique({
       where: { id: input.targetUserId },

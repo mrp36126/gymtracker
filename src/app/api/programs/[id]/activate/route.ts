@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { canManageProgram, findActivePrimaryProgramForUser } from '@/lib/program-scope';
+import { canManageProgram } from '@/lib/program-scope';
 import { isAdmin, isTrainer } from '@/lib/rbac';
 
 export async function POST(
