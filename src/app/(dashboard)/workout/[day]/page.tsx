@@ -6,6 +6,7 @@ import type { Exercise } from '@/types';
 import Link from 'next/link';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 import WorkoutTimerButton from '@/components/timer/WorkoutTimerButton';
+import { isAdmin, isTrainer } from '@/lib/rbac';
 
 export default async function WorkoutDayPage({ params }: { params: Promise<{ day: string }> }) {
   const user = await getAuthUser();
@@ -17,7 +18,7 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
   const program = await findActivePrimaryProgramForUser(user.id);
 
   if (!program) {
-    if (!user.isAdmin) redirect('/welcome');
+    if (!isAdmin(user) && !isTrainer(user)) redirect('/welcome');
     return (
       <main className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6">
         <div className="text-center">

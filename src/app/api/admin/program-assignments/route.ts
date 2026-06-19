@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { canManageProgram, canViewProgram } from '@/lib/program-scope';
+import { isAdmin, isTrainer } from '@/lib/rbac';
 
 const AssignmentSchema = z.object({
   sourceProgramId: z.string().min(1),
@@ -12,8 +14,8 @@ export async function POST(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
 
-  if (!user!.isAdmin) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  if (!isAdmin(user!) && !isTrainer(user!)) {
+    return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
   }
 
   let input;
@@ -25,12 +27,13 @@ export async function POST(req: NextRequest) {
 
   const [sourceProgram, targetUser] = await Promise.all([
     prisma.program.findFirst({
-      where: { id: input.sourceProgramId, userId: user!.id },
+      where: { id: input.sourceProgramId },
+      include: { user: { select: { id: true, trainerId: true, isAdmin: true, isTrainer: true, isTrainerUser: true } }, exercises: true },
       include: { exercises: true },
     }),
     prisma.user.findUnique({
       where: { id: input.targetUserId },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, trainerId: true, isTrainerUser: true },
     }),
   ]);
 
@@ -38,8 +41,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Source program not found' }, { status: 404 });
   }
 
+  if (!canManageProgram(user!, sourceProgram.user)) {
+    return NextResponse.json({ error: 'Source program not found' }, { status: 404 });
+  }
+
   if (!targetUser) {
     return NextResponse.json({ error: 'Target user not found' }, { status: 404 });
+  }
+
+  if (!isAdmin(user!)) {
+    if (!targetUser.isTrainerUser) {
+      return NextResponse.json({ error: 'Target user must be a trainer user' }, { status: 403 });
+    }
+
+    if (targetUser.trainerId && targetUser.trainerId !== user!.id) {
+      return NextResponse.json({ error: 'Target user is assigned to another trainer' }, { status: 403 });
+    }
   }
 
   const assignedProgram = await prisma.$transaction(async (tx) => {

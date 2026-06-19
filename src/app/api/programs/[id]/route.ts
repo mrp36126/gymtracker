@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
+import { canManageProgram, canViewProgram, findActivePrimaryProgramForUser } from '@/lib/program-scope';
+import { isAdmin, isTrainer } from '@/lib/rbac';
 import { loadExerciseCatalog } from '@/lib/exercise-catalog';
 import { z } from 'zod';
 
@@ -32,7 +33,7 @@ export async function GET(
 ) {
   const { user, response } = await requireAuth();
   if (response) return response;
-  if (!user!.isAdmin) {
+  if (!isAdmin(user!) && !isTrainer(user!)) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
     if (!activePrimaryProgram) {
       return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
@@ -41,11 +42,15 @@ export async function GET(
   const { id } = await params;
 
   const program = await prisma.program.findFirst({
-    where: { id, userId: user!.id },
-    include: { exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] } },
+    where: { id },
+    include: {
+      user: { select: { id: true, trainerId: true, isAdmin: true, isTrainer: true, isTrainerUser: true } },
+      exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] },
+    },
   });
 
   if (!program) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!canViewProgram(user!, program.user)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json({ data: program });
 }
 
@@ -56,7 +61,7 @@ export async function PATCH(
 ) {
   const { user, response } = await requireAuth();
   if (response) return response;
-  if (!user!.isAdmin) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+  if (!isAdmin(user!) && !isTrainer(user!)) return NextResponse.json({ error: 'Program management required' }, { status: 403 });
 
   const { id } = await params;
   let input;
@@ -68,9 +73,13 @@ export async function PATCH(
   }
 
   const existing = await prisma.program.findFirst({
-    where: { id, userId: user!.id },
+    where: { id },
+    include: { user: { select: { id: true, trainerId: true, isAdmin: true, isTrainer: true, isTrainerUser: true } } },
   });
   if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+  if (!canManageProgram(user!, existing.user)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -188,14 +197,16 @@ export async function DELETE(
 ) {
   const { user, response } = await requireAuth();
   if (response) return response;
-  if (!user!.isAdmin) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+  if (!isAdmin(user!) && !isTrainer(user!)) return NextResponse.json({ error: 'Program management required' }, { status: 403 });
 
   const { id } = await params;
 
   const program = await prisma.program.findFirst({
-    where: { id, userId: user!.id },
+    where: { id },
+    include: { user: { select: { id: true, trainerId: true, isAdmin: true, isTrainer: true, isTrainerUser: true } } },
   });
   if (!program) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!canManageProgram(user!, program.user)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (program.isActive) {
     return NextResponse.json({ error: 'Cannot delete the active program' }, { status: 400 });
   }

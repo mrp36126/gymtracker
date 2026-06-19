@@ -4,10 +4,12 @@ import CustomWorkoutBuilder from '@/components/workout/CustomWorkoutBuilder';
 import { getAuthUser } from '@/lib/auth';
 import { loadExerciseCatalog } from '@/lib/exercise-catalog';
 import type { ExerciseCatalogItem } from '@/types';
+import { canUseCustomWorkout } from '@/lib/rbac';
 
 export default async function CustomWorkoutPage() {
   const user = await getAuthUser();
   if (!user) redirect('/login');
+  if (!canUseCustomWorkout(user)) redirect('/welcome');
 
   let exercises: ExerciseCatalogItem[] = [];
   let error = '';

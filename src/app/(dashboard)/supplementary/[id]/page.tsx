@@ -6,6 +6,7 @@ import type { Exercise } from '@/types';
 import Link from 'next/link';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 import WorkoutTimerButton from '@/components/timer/WorkoutTimerButton';
+import { isAdmin, isTrainer } from '@/lib/rbac';
 
 export default async function SupplementaryProgramPage({
   params,
@@ -15,7 +16,7 @@ export default async function SupplementaryProgramPage({
   const user = await getAuthUser();
   if (!user) redirect('/login');
 
-  if (!user.isAdmin) {
+  if (!isAdmin(user) && !isTrainer(user)) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);
     if (!activePrimaryProgram) redirect('/welcome');
   }

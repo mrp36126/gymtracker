@@ -7,6 +7,8 @@ export interface User {
   supabaseId: string;
   isAdmin: boolean;
   isTrainer: boolean;
+  isTrainerUser: boolean;
+  trainerId?: string | null;
 }
 
 export interface Program {

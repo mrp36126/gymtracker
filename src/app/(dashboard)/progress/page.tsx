@@ -4,18 +4,32 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import ProgressClient from '@/components/progress/ProgressClient';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
+import { canViewUserProgress } from '@/lib/rbac';
 
-export default async function ProgressPage() {
+export default async function ProgressPage({ searchParams }: { searchParams?: Promise<{ userId?: string }> }) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
 
-  if (!user.isAdmin) {
+  const params = searchParams ? await searchParams : {};
+  const targetUserId = params.userId ?? user.id;
+  const targetUser = targetUserId === user.id
+    ? user
+    : await prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, trainerId: true },
+      });
+
+  if (!canViewUserProgress(user, targetUser)) {
+    redirect('/welcome');
+  }
+
+  if (targetUserId === user.id && !user.isAdmin) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);
     if (!activePrimaryProgram) redirect('/welcome');
   }
 
   const logs = await prisma.workoutLog.findMany({
-    where: { userId: user.id },
+    where: { userId: targetUserId },
     include: { exercise: true },
     orderBy: { loggedAt: 'asc' },
   });
@@ -62,7 +76,7 @@ export default async function ProgressPage() {
     <main className="min-h-screen bg-[#0A0A0F] pb-10">
       <div className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
         <Link href="/welcome" className="text-white/40 hover:text-white/70 transition text-sm">← Home</Link>
-        <p className="text-sm font-bold text-white">My Progress</p>
+        <p className="text-sm font-bold text-white">{targetUserId === user.id ? 'My Progress' : 'User Progress'}</p>
         <div className="w-10"></div>
       </div>
 

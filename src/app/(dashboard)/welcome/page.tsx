@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getTodayName } from '@/lib/day-resolver';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { canUseCustomWorkout } from '@/lib/rbac';
 
 export default async function WelcomePage() {
   let user;
@@ -169,39 +170,120 @@ export default async function WelcomePage() {
           </div>
         )}
 
-        <div className={`grid gap-3 mb-4 ${user.isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
-          <Link href="/progress" className="block">
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
-              <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
-              <p className="text-lg font-extrabold text-white">Charts</p>
+        {user.isAdmin ? (
+          <>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <Link href="/progress" className="block">
+                <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                  <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
+                  <p className="text-lg font-extrabold text-white">Charts</p>
+                </div>
+              </Link>
+              <Link href="/program" className="block">
+                <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                  <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Program</p>
+                  <p className="text-lg font-extrabold text-white">Plan</p>
+                </div>
+              </Link>
+              <Link href="/leaderboard" className="block">
+                <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition">
+                  <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Leaderboard</p>
+                  <p className="text-lg font-extrabold text-white">Top Lifts</p>
+                </div>
+              </Link>
             </div>
-          </Link>
-          {user.isAdmin && (
-            <Link href="/program" className="block">
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
-                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Program</p>
-                <p className="text-lg font-extrabold text-white">Plan</p>
+
+            <Link href="/admin" className="block">
+              <div className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-4 flex items-center justify-between hover:border-white/10 transition">
+                <div>
+                  <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-0.5">Admin</p>
+                  <p className="text-sm font-bold text-white/70">Manage Programs & Media</p>
+                </div>
+                <span className="text-white/20 text-lg">-&gt;</span>
               </div>
             </Link>
-          )}
-          <Link href="/leaderboard" className="block">
-            <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition">
-              <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Leaderboard</p>
-              <p className="text-lg font-extrabold text-white">Top Lifts</p>
-            </div>
-          </Link>
-        </div>
-
-        {user.isAdmin && (
-          <Link href="/admin" className="block">
-            <div className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-4 flex items-center justify-between hover:border-white/10 transition">
-              <div>
-                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-0.5">Admin</p>
-                <p className="text-sm font-bold text-white/70">Manage Programs & Media</p>
+          </>
+        ) : user.isTrainer ? (
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <Link href="/welcome" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Dashboard</p>
+                <p className="text-lg font-extrabold text-white">Home</p>
               </div>
-              <span className="text-white/20 text-lg">-&gt;</span>
-            </div>
-          </Link>
+            </Link>
+            <Link href="/admin" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Assigned Users</p>
+                <p className="text-lg font-extrabold text-white">Manage</p>
+              </div>
+            </Link>
+            <Link href="/admin" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Create Program</p>
+                <p className="text-lg font-extrabold text-white">Exercise Pool</p>
+              </div>
+            </Link>
+            <Link href="/program" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Supplementary Programs</p>
+                <p className="text-lg font-extrabold text-white">View</p>
+              </div>
+            </Link>
+            <Link href="/program" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Exercise Pool</p>
+                <p className="text-lg font-extrabold text-white">Programs</p>
+              </div>
+            </Link>
+            <Link href="/progress" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress Tracking</p>
+                <p className="text-lg font-extrabold text-white">Charts</p>
+              </div>
+            </Link>
+          </div>
+        ) : user.isTrainerUser ? (
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <Link href="/program" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">My Program</p>
+                <p className="text-lg font-extrabold text-white">View</p>
+              </div>
+            </Link>
+            <Link href={activeProgram ? '/workout/' + todayName.toLowerCase() : '/program'} className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">My Exercises</p>
+                <p className="text-lg font-extrabold text-white">Today&apos;s Workout</p>
+              </div>
+            </Link>
+            <Link href="/progress" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress Charts</p>
+                <p className="text-lg font-extrabold text-white">Track</p>
+              </div>
+            </Link>
+            <Link href="/leaderboard" className="block">
+              <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Leaderboard</p>
+                <p className="text-lg font-extrabold text-white">Top Lifts</p>
+              </div>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-3 mb-4 grid-cols-2">
+            <Link href="/progress" className="block">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
+                <p className="text-lg font-extrabold text-white">Charts</p>
+              </div>
+            </Link>
+            <Link href="/leaderboard" className="block">
+              <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Leaderboard</p>
+                <p className="text-lg font-extrabold text-white">Top Lifts</p>
+              </div>
+            </Link>
+          </div>
         )}
       </div>
     </main>

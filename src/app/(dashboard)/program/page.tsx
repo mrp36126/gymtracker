@@ -4,12 +4,13 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import CsvUploader from '@/components/program/CsvUploader';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
+import { isAdmin, isTrainer } from '@/lib/rbac';
 
 export default async function ProgramPage() {
   const user = await getAuthUser();
   if (!user) redirect('/login');
 
-  if (!user.isAdmin) {
+  if (!isAdmin(user) && !isTrainer(user)) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);
     if (!activePrimaryProgram) redirect('/welcome');
   }

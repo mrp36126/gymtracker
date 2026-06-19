@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 import { loadExerciseCatalog } from '@/lib/exercise-catalog';
 import ProgramExerciseManager from '@/components/program/ProgramExerciseManager';
+import { canManageProgram, canViewProgram } from '@/lib/program-scope';
+import { isAdmin, isTrainer } from '@/lib/rbac';
 
 export default async function ProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
 
-  if (!user.isAdmin) {
+  if (!isAdmin(user) && !isTrainer(user)) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);
     if (!activePrimaryProgram) redirect('/welcome');
   }
@@ -18,14 +20,17 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
 
   const program = await prisma.program.findFirst({
-    where: { id, userId: user.id },
-    include: { exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] } },
+    where: { id },
+    include: {
+      user: { select: { id: true, trainerId: true, isAdmin: true, isTrainer: true, isTrainerUser: true } },
+      exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] },
+    },
   });
 
-  if (!program) redirect('/program');
+  if (!program || !canViewProgram(user, program.user)) redirect('/program');
 
   const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-  const exerciseCatalog = user.isAdmin ? await loadExerciseCatalog() : [];
+  const exerciseCatalog = canManageProgram(user, program.user) ? await loadExerciseCatalog() : [];
 
   const byDay = program.exercises.reduce((acc, ex) => {
     if (!acc[ex.day]) acc[ex.day] = [];
@@ -51,7 +56,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <div className="max-w-lg mx-auto px-5 pt-6">
-        {user.isAdmin && (
+        {canManageProgram(user, program.user) && (
           <ProgramExerciseManager
             programId={program.id}
             initialExercises={program.exercises}

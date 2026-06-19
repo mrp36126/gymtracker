@@ -4,11 +4,65 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import AdminProgramManager from '@/components/admin/AdminProgramManager';
 import { loadExerciseCatalog } from '@/lib/exercise-catalog';
+import TrainerPanel from '@/components/admin/TrainerPanel';
+import { isAdmin, isTrainer } from '@/lib/rbac';
 
 export default async function AdminPage() {
   const user = await getAuthUser();
   if (!user) redirect('/login');
-  if (!user.isAdmin) redirect('/welcome');
+  if (!isAdmin(user) && !isTrainer(user)) redirect('/welcome');
+
+  if (isTrainer(user) && !isAdmin(user)) {
+    const [programs, assignedUsers, availableUsers, assignedPrograms, exerciseCatalog] = await Promise.all([
+      prisma.program.findMany({
+        where: { userId: user.id },
+        include: { _count: { select: { exercises: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.user.findMany({
+        where: { isTrainerUser: true, trainerId: user.id },
+        select: { id: true, name: true, email: true, trainerId: true },
+        orderBy: [{ name: 'asc' }, { email: 'asc' }],
+      }),
+      prisma.user.findMany({
+        where: { isTrainerUser: true, trainerId: null },
+        select: { id: true, name: true, email: true, trainerId: true },
+        orderBy: [{ name: 'asc' }, { email: 'asc' }],
+      }),
+      prisma.program.findMany({
+        where: {
+          user: { trainerId: user.id },
+        },
+        include: {
+          user: { select: { id: true, name: true, email: true, trainerId: true } },
+          _count: { select: { exercises: true } },
+        },
+        orderBy: [{ name: 'asc' }, { createdAt: 'desc' }],
+      }),
+      loadExerciseCatalog(),
+    ]);
+
+    return (
+      <main className="min-h-screen bg-[#0A0A0F] pb-10">
+        <div className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
+          <Link href="/welcome" className="text-white/40 hover:text-white/70 transition text-sm">← Home</Link>
+          <p className="text-sm font-bold text-white">Trainer Panel</p>
+          <div className="w-10"></div>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-5 pt-6">
+          <TrainerPanel
+            trainerId={user.id}
+            programs={programs}
+            assignedUsers={assignedUsers}
+            availableUsers={availableUsers}
+            assignedPrograms={assignedPrograms}
+            exerciseCatalog={exerciseCatalog}
+          />
+        </div>
+      </main>
+    );
+  }
 
   const programs = await prisma.program.findMany({
     where: { userId: user.id },

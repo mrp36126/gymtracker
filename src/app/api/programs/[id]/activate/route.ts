@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { canManageProgram, findActivePrimaryProgramForUser } from '@/lib/program-scope';
+import { isAdmin, isTrainer } from '@/lib/rbac';
 
 export async function POST(
   req: Request,
@@ -9,22 +11,27 @@ export async function POST(
   const { user, response } = await requireAuth();
   if (response) return response;
 
-  if (!user!.isAdmin) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  if (!isAdmin(user!) && !isTrainer(user!)) {
+    return NextResponse.json({ error: 'Program management required' }, { status: 403 });
   }
 
   const { id } = await params;
 
   const program = await prisma.program.findFirst({
-    where: { id, userId: user!.id },
+    where: { id },
+    include: { user: { select: { id: true, trainerId: true, isAdmin: true, isTrainer: true, isTrainerUser: true } } },
   });
 
   if (!program) {
     return NextResponse.json({ error: 'Program not found' }, { status: 404 });
   }
 
+  if (!canManageProgram(user!, program.user)) {
+    return NextResponse.json({ error: 'Program not found' }, { status: 404 });
+  }
+
   await prisma.program.updateMany({
-    where: { programType: program.programType, userId: user!.id },
+    where: { programType: program.programType, userId: program.userId },
     data: { isActive: false },
   });
 

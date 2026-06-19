@@ -5,6 +5,7 @@ import { parseProgramCsv } from '@/lib/csv-parser';
 import { createSupabaseServerClient } from '@/lib/supabase';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 import { loadExerciseCatalog } from '@/lib/exercise-catalog';
+import { isAdmin, isTrainer } from '@/lib/rbac';
 import { z } from 'zod';
 
 const ProgramTypeSchema = z.enum(['primary', 'supplementary']).default('primary');
@@ -34,7 +35,7 @@ export async function GET() {
   const { user, response } = await requireAuth();
   if (response) return response;
 
-  if (!user!.isAdmin) {
+  if (!isAdmin(user!) && !isTrainer(user!)) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
     if (!activePrimaryProgram) {
       return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
@@ -54,11 +55,15 @@ export async function POST(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
 
-  if (!user!.isAdmin) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  const contentType = req.headers.get('content-type') ?? '';
+
+  if (contentType.includes('multipart/form-data') && !isAdmin(user!)) {
+    return NextResponse.json({ error: 'CSV uploads are admin only' }, { status: 403 });
   }
 
-  const contentType = req.headers.get('content-type') ?? '';
+  if (!isAdmin(user!) && !isTrainer(user!)) {
+    return NextResponse.json({ error: 'Program management required' }, { status: 403 });
+  }
 
   if (contentType.includes('application/json')) {
     let body: unknown;

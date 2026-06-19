@@ -9,17 +9,22 @@ datasource db {
 }
 
 model User {
-  id          String       @id @default(cuid())
-  supabaseId  String       @unique
-  name        String
-  email       String       @unique
-  isAdmin     Boolean      @default(false)
-  isTrainer   Boolean      @default(false)
-  isTrainerUser Boolean    @default(false)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  programs    Program[]
-  workoutLogs WorkoutLog[]
+  id             String       @id @default(cuid())
+  supabaseId     String       @unique
+  name           String
+  email          String       @unique
+  isAdmin        Boolean      @default(false)
+  isTrainer      Boolean      @default(false)
+  isTrainerUser  Boolean      @default(false)
+  trainerId      String?
+  trainer        User?        @relation("TrainerUsers", fields: [trainerId], references: [id], onDelete: SetNull)
+  trainerUsers   User[]       @relation("TrainerUsers")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  programs       Program[]
+  workoutLogs    WorkoutLog[]
+
+  @@index([trainerId])
 
   @@map("users")
 }
