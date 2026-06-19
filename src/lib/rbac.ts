@@ -17,7 +17,8 @@ export function isTrainerUser(user: Pick<AppUser, 'isTrainerUser'> | null | unde
 }
 
 export function isIndividualUser(user: Pick<AppUser, 'isAdmin' | 'isTrainer' | 'isTrainerUser'> | null | undefined) {
-  return Boolean(user) && !user.isAdmin && !user.isTrainer && !user.isTrainerUser;
+  if (!user) return false;
+  return !user.isAdmin && !user.isTrainer && !user.isTrainerUser;
 }
 
 export function canAccessAdminArea(user: Pick<AppUser, 'isAdmin' | 'isTrainer'> | null | undefined) {
