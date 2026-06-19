@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 export default async function HyroxPage() {
   const user = await getAuthUser();
   if (!user) redirect('/login');
+  if (user.isTrainerUser) redirect('/welcome');
 
   const supplementaryPrograms = await prisma.program.findMany({
     where: { isActive: true, programType: 'supplementary', userId: user.id },

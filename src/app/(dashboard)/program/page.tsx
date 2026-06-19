@@ -9,6 +9,7 @@ import { isAdmin, isTrainer } from '@/lib/rbac';
 export default async function ProgramPage() {
   const user = await getAuthUser();
   if (!user) redirect('/login');
+  if (user.isTrainerUser) redirect('/welcome');
 
   if (!isAdmin(user) && !isTrainer(user)) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);

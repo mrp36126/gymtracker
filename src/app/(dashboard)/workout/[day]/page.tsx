@@ -86,7 +86,7 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
               </div>
               <div className="h-px flex-1 bg-white/[0.05]"></div>
             </div>
-            <ExerciseCard exercise={ex} />
+            <ExerciseCard exercise={ex} readOnly={user.isTrainerUser} />
           </div>
         ))}
       </div>

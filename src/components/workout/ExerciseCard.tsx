@@ -6,6 +6,10 @@ import ExerciseInstructionModal from './ExerciseInstructionModal';
 import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
 
 interface Props { exercise: Exercise; }
+interface Props {
+  exercise: Exercise;
+  readOnly?: boolean;
+}
 
 function DetailImage({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(!src);
@@ -58,7 +62,7 @@ function getExerciseTargetLabel(muscleGroup: string, exerciseName: string, defau
   return `${defaultReps} reps target`;
 }
 
-export default function ExerciseCard({ exercise }: Props) {
+export default function ExerciseCard({ exercise, readOnly = false }: Props) {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
   const [completedSets, setCompletedSets] = useState(0);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -92,7 +96,7 @@ export default function ExerciseCard({ exercise }: Props) {
         />
       ) : null}
       {/* Media */}
-      <div className="relative w-full min-h-[160px] bg-[#12121A] overflow-hidden" style={{ aspectRatio: '16/9' }}>
+      <div className="relative w-full min-h-[160px] aspect-video bg-[#12121A] overflow-hidden">
         {mediaUrl ? (
           isVideo ? (
             <>
@@ -127,7 +131,7 @@ export default function ExerciseCard({ exercise }: Props) {
             </button>
           )
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ minHeight: '160px' }}>
+          <div className="w-full h-full min-h-[160px] flex items-center justify-center">
             <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center">
               <svg width="28" height="28" fill="none" stroke="#6366F1" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M6 4v16M18 4v16M6 12h12M2 9h4M18 9h4M2 15h4M18 15h4"/>
@@ -151,28 +155,29 @@ export default function ExerciseCard({ exercise }: Props) {
         {/* Exercise header */}
         <div className="flex items-start justify-between gap-3 mb-1">
           <h3 className="text-base font-extrabold text-white tracking-tight flex-1 pr-2">{exercise.name}</h3>
-          <button
-            type="button"
-            onClick={() => isExerciseTimerActive ? stopExercise() : startExercise(exercise.id, exercise.name)}
-            className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide transition active:scale-95 ${
-              isExerciseTimerActive
-                ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
-                : 'border-white/10 bg-white/[0.04] text-white/40 hover:border-indigo-400/30 hover:text-white/70'
-            }`}
-            aria-pressed={isExerciseTimerActive}
-            aria-label={`${isExerciseTimerActive ? 'Stop' : 'Start'} timer for ${exercise.name}`}
-          >
-            {isExerciseTimerActive ? (
-              <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 7h10v10H7z" />
-              </svg>
-            ) : (
-              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M10 2h4M12 14l4-4M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
-              </svg>
-            )}
-            {isExerciseTimerActive ? 'Stop' : 'Time'}
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => isExerciseTimerActive ? stopExercise() : startExercise(exercise.id, exercise.name)}
+              className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide transition active:scale-95 ${
+                isExerciseTimerActive
+                  ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+                  : 'border-white/10 bg-white/[0.04] text-white/40 hover:border-indigo-400/30 hover:text-white/70'
+              }`}
+              aria-label={`${isExerciseTimerActive ? 'Stop' : 'Start'} timer for ${exercise.name}`}
+            >
+              {isExerciseTimerActive ? (
+                <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 7h10v10H7z" />
+                </svg>
+              ) : (
+                <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 2h4M12 14l4-4M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
+                </svg>
+              )}
+              {isExerciseTimerActive ? 'Stop' : 'Time'}
+            </button>
+          )}
         </div>
         <p className="text-xs text-white/30 mb-4">
           {exercise.defaultSets} sets - {targetLabel}
@@ -206,15 +211,21 @@ export default function ExerciseCard({ exercise }: Props) {
           ) : null}
         </details>
 
-        <SetLogger
-          exerciseId={exercise.id}
-          exerciseName={exercise.name}
-          muscleGroup={exercise.muscleGroup}
-          defaultSets={exercise.defaultSets}
-          defaultReps={exercise.defaultReps}
-          lastLog={lastLog}
-          onSetComplete={handleSetComplete}
-        />
+        {readOnly ? (
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 text-xs text-white/45">
+            Read-only workout view. Sets and reps are prescribed by your trainer.
+          </div>
+        ) : (
+          <SetLogger
+            exerciseId={exercise.id}
+            exerciseName={exercise.name}
+            muscleGroup={exercise.muscleGroup}
+            defaultSets={exercise.defaultSets}
+            defaultReps={exercise.defaultReps}
+            lastLog={lastLog}
+            onSetComplete={handleSetComplete}
+          />
+        )}
       </div>
     </div>
   );

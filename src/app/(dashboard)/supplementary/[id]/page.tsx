@@ -15,6 +15,7 @@ export default async function SupplementaryProgramPage({
 }) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
+  if (user.isTrainerUser) redirect('/welcome');
 
   if (!isAdmin(user) && !isTrainer(user)) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);
@@ -107,7 +108,7 @@ export default async function SupplementaryProgramPage({
                   </div>
                   <div className="h-px flex-1 bg-white/[0.04]"></div>
                 </div>
-                <ExerciseCard exercise={ex} />
+                <ExerciseCard exercise={ex} readOnly={user.isTrainerUser} />
               </div>
             ))}
           </div>

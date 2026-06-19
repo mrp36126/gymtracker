@@ -47,6 +47,10 @@ export async function POST(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
 
+  if (user!.isTrainerUser) {
+    return NextResponse.json({ error: 'Trainer users are read-only' }, { status: 403 });
+  }
+
   if (!user!.isAdmin) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
     if (!activePrimaryProgram) {
