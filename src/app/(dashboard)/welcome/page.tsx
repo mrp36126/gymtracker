@@ -245,6 +245,12 @@ export default async function WelcomePage() {
                 <p className="text-lg font-extrabold text-white">Charts</p>
               </div>
             </Link>
+            <Link href="/leaderboard" className="block">
+              <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Leaderboard</p>
+                <p className="text-lg font-extrabold text-white">Top Lifts</p>
+              </div>
+            </Link>
           </div>
         ) : user.isTrainerUser ? (
           <div className="grid grid-cols-2 gap-3 mb-4">
