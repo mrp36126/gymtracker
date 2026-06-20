@@ -1,7 +1,7 @@
 import { prisma } from './prisma';
 import type { AppUser } from './rbac';
 
-type Viewer = Pick<AppUser, 'id' | 'isAdmin' | 'isTrainer'>;
+type Viewer = Pick<AppUser, 'id' | 'isAdmin' | 'isTrainer' | 'isTrainerUser'>;
 
 export type ManagedTargetUser = {
   id: string;
@@ -24,6 +24,7 @@ export async function resolveManagedTargetUser(
       id: viewer.id,
       isAdmin: viewer.isAdmin,
       isTrainer: viewer.isTrainer,
+      isTrainerUser: viewer.isTrainerUser,
     };
   }
 

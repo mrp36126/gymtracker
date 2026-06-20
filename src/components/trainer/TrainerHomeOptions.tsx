@@ -52,7 +52,7 @@ export default function TrainerHomeOptions({ assignedUsers, todayName }: Props) 
 
   const handleStartWorkout = () => {
     if (!selectedUserId) return;
-    router.push(`/workout/${todayName.toLowerCase()}?userId=${selectedUserId}`);
+    router.push(`/trainer/session?userId=${selectedUserId}`);
   };
 
   const handleOpenProgress = () => {
@@ -100,7 +100,7 @@ export default function TrainerHomeOptions({ assignedUsers, todayName }: Props) 
               disabled={!selectedUserId}
               className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
             >
-              {selectedUser ? `Start ${selectedUser.name}'s ${todayName} Workout` : 'Select a trainee first'}
+              {selectedUser ? `Load Exercises For ${selectedUser.name}` : 'Select a trainee first'}
             </button>
           </div>
         </div>

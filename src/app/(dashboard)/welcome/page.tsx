@@ -70,9 +70,24 @@ export default async function WelcomePage() {
   let lastMonthLogCount = 0;
 
   try {
-    activeProgram = await prisma.program.findFirst({
-      where: { isActive: true, programType: 'primary', userId: user.id },
-    });
+    if (user.isTrainerUser) {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      activeProgram = await prisma.program.findFirst({
+        where: {
+          isActive: true,
+          programType: 'primary',
+          userId: user.id,
+          name: { startsWith: 'Trainer Session · ' },
+          createdAt: { gte: startOfToday },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    } else {
+      activeProgram = await prisma.program.findFirst({
+        where: { isActive: true, programType: 'primary', userId: user.id },
+      });
+    }
 
     if (activeProgram) {
       todayExerciseCount = await prisma.exercise.count({

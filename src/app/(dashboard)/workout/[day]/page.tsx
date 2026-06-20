@@ -31,14 +31,31 @@ export default async function WorkoutDayPage({
   const targetUserId = targetUser.id;
   const targetUserName = targetUserId === user.id ? user.name : targetUser.name ?? 'Selected user';
 
-  const program = await findActivePrimaryProgramForUser(targetUserId);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const program = targetUser.isTrainerUser
+    ? await prisma.program.findFirst({
+        where: {
+          userId: targetUserId,
+          isActive: true,
+          programType: 'primary',
+          name: { startsWith: 'Trainer Session · ' },
+          createdAt: { gte: startOfToday },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    : await findActivePrimaryProgramForUser(targetUserId);
 
   if (!program) {
     if (!isAdmin(user) && !isTrainer(user)) redirect('/welcome');
     return (
       <main className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6">
         <div className="text-center">
-          <p className="text-white/40">No active program found.</p>
+          <p className="text-white/40">No active session found.</p>
+          {isTrainer(user) && targetUserId !== user.id && (
+            <Link href={`/trainer/session?userId=${targetUserId}`} className="text-indigo-400 text-sm mt-2 inline-block">Load exercises for this session</Link>
+          )}
           <Link href="/welcome" className="text-indigo-400 text-sm mt-2 inline-block">← Home</Link>
         </div>
       </main>

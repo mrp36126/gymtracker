@@ -6,6 +6,12 @@ const prismaMock = vi.hoisted(() => ({
   user: {
     findUnique: vi.fn(),
   },
+  program: {
+    findFirst: vi.fn(),
+  },
+  exercise: {
+    findFirst: vi.fn(),
+  },
   workoutLog: {
     create: vi.fn(),
   },
@@ -36,6 +42,8 @@ describe('workout sets route', () => {
     requireAuthMock.mockResolvedValue({ user: trainerUser, response: null });
     findActivePrimaryProgramForUserMock.mockResolvedValue({ id: 'program-1' });
     findExerciseForUserMock.mockResolvedValue({ id: 'exercise-1', muscleGroup: 'Chest', name: 'Bench Press' });
+    prismaMock.program.findFirst.mockResolvedValue({ id: 'program-1' });
+    prismaMock.exercise.findFirst.mockResolvedValue({ id: 'exercise-1', muscleGroup: 'Chest', name: 'Bench Press' });
     prismaMock.workoutLog.create.mockResolvedValue({ id: 'log-1' });
   });
 
@@ -61,8 +69,10 @@ describe('workout sets route', () => {
     }));
 
     expect(response.status).toBe(201);
-    expect(findActivePrimaryProgramForUserMock).toHaveBeenCalledWith('cmcuid000000000000000099');
-    expect(findExerciseForUserMock).toHaveBeenCalledWith('cmcuid000000000000000001', 'cmcuid000000000000000099');
+    expect(prismaMock.program.findFirst).toHaveBeenCalled();
+    expect(prismaMock.exercise.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: 'cmcuid000000000000000001' }),
+    }));
     expect(prismaMock.workoutLog.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ userId: 'cmcuid000000000000000099' }),
     }));

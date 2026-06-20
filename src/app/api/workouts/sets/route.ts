@@ -69,15 +69,37 @@ export async function POST(req: NextRequest) {
   }
 
   const targetUserId = targetUser.id;
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const activePrimaryProgram = targetUser.isTrainerUser
+    ? await prisma.program.findFirst({
+        where: {
+          userId: targetUserId,
+          isActive: true,
+          programType: 'primary',
+          name: { startsWith: 'Trainer Session · ' },
+          createdAt: { gte: startOfToday },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    : await findActivePrimaryProgramForUser(targetUserId);
 
   if (!user!.isAdmin) {
-    const activePrimaryProgram = await findActivePrimaryProgramForUser(targetUserId);
     if (!activePrimaryProgram) {
       return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
     }
   }
 
-  const exercise = await findExerciseForUser(body.exerciseId, targetUserId);
+  const exercise = targetUser.isTrainerUser
+    ? await prisma.exercise.findFirst({
+        where: {
+          id: body.exerciseId,
+          programId: activePrimaryProgram?.id,
+        },
+      })
+    : await findExerciseForUser(body.exerciseId, targetUserId);
+
   if (!exercise) {
     return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
   }
