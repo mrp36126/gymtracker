@@ -63,6 +63,26 @@ function getExerciseTargetLabel(muscleGroup: string, exerciseName: string, defau
   return `${defaultReps} reps target`;
 }
 
+function formatLastCapturedLog(lastLog: WorkoutLog) {
+  if (lastLog.durationSeconds && lastLog.distanceKm) {
+    const minutes = Math.floor(lastLog.durationSeconds / 60);
+    const seconds = lastLog.durationSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')} min · ${lastLog.distanceKm} km`;
+  }
+
+  if (lastLog.durationSeconds) {
+    const minutes = Math.floor(lastLog.durationSeconds / 60);
+    const seconds = lastLog.durationSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')} min`;
+  }
+
+  if (lastLog.distanceKm) {
+    return `${lastLog.weight} kg · ${lastLog.distanceKm} km`;
+  }
+
+  return `${lastLog.weight} kg · ${lastLog.sets} sets × ${lastLog.reps} reps`;
+}
+
 export default function ExerciseCard({ exercise, readOnly = false, targetUserId }: Props) {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
   const [completedSets, setCompletedSets] = useState(0);
@@ -213,8 +233,16 @@ export default function ExerciseCard({ exercise, readOnly = false, targetUserId 
         </details>
 
         {readOnly ? (
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 text-xs text-white/45">
-            Read-only workout view. Sets and reps are prescribed by your trainer.
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 text-xs text-white/45 space-y-2">
+            <p>Read-only workout view. Sets and reps are prescribed by your trainer.</p>
+            {lastLog ? (
+              <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-300/70">Last Captured</p>
+                <p className="text-xs font-semibold text-white/80 mt-1">{formatLastCapturedLog(lastLog)}</p>
+              </div>
+            ) : (
+              <p className="text-[11px] text-white/35">No captured sets yet for this exercise.</p>
+            )}
           </div>
         ) : (
           <SetLogger
