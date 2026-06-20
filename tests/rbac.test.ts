@@ -8,10 +8,10 @@ describe('RBAC helpers', () => {
   const trainerUser = { id: 'athlete', isAdmin: false, isTrainer: false, isTrainerUser: true };
   const individual = { id: 'user', isAdmin: false, isTrainer: false, isTrainerUser: false };
 
-  it('keeps custom workout unavailable for trainers and trainer-users', () => {
+  it('allows trainers, admins, and individual users to use custom workouts while trainer-users remain read-only', () => {
     expect(canUseCustomWorkout(admin)).toBe(true);
     expect(canUseCustomWorkout(individual)).toBe(true);
-    expect(canUseCustomWorkout(trainer)).toBe(false);
+    expect(canUseCustomWorkout(trainer)).toBe(true);
     expect(canUseCustomWorkout(trainerUser)).toBe(false);
   });
 

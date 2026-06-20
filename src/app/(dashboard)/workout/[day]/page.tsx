@@ -7,15 +7,31 @@ import Link from 'next/link';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 import WorkoutTimerButton from '@/components/timer/WorkoutTimerButton';
 import { isAdmin, isTrainer } from '@/lib/rbac';
+import { resolveManagedTargetUser } from '@/lib/trainer-context';
 
-export default async function WorkoutDayPage({ params }: { params: Promise<{ day: string }> }) {
+export default async function WorkoutDayPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ day: string }>;
+  searchParams?: Promise<{ userId?: string }>;
+}) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
 
   const { day: rawDay } = await params;
+  const query = searchParams ? await searchParams : {};
   const day = rawDay.charAt(0).toUpperCase() + rawDay.slice(1);
+  const targetUser = await resolveManagedTargetUser(user, query.userId);
 
-  const program = await findActivePrimaryProgramForUser(user.id);
+  if (!targetUser) {
+    redirect('/welcome');
+  }
+
+  const targetUserId = targetUser.id;
+  const targetUserName = targetUserId === user.id ? user.name : targetUser.name ?? 'Selected user';
+
+  const program = await findActivePrimaryProgramForUser(targetUserId);
 
   if (!program) {
     if (!isAdmin(user) && !isTrainer(user)) redirect('/welcome');
@@ -37,7 +53,7 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
   const exercisesWithLogs: Exercise[] = await Promise.all(
     exercises.map(async ex => {
       const lastLog = await prisma.workoutLog.findFirst({
-        where: { exerciseId: ex.id, userId: user.id },
+        where: { exerciseId: ex.id, userId: targetUserId },
         orderBy: { loggedAt: 'desc' },
       });
       return { ...ex, lastLog: lastLog ?? null } as Exercise;
@@ -69,10 +85,10 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
         <Link href="/welcome" className="text-white/40 hover:text-white/70 transition text-sm">← Home</Link>
         <div className="text-center">
           <p className="text-xs font-semibold text-white/30 uppercase tracking-widest">{program.name}</p>
-          <p className="text-sm font-bold text-white">{day} Workout</p>
+          <p className="text-sm font-bold text-white">{targetUserId === user.id ? `${day} Workout` : `${targetUserName} · ${day}`}</p>
         </div>
         <div className="flex items-center justify-end gap-2">
-          <WorkoutTimerButton label={`${day} Workout`} />
+          <WorkoutTimerButton label={targetUserId === user.id ? `${day} Workout` : `${targetUserName} ${day} Workout`} />
           <div className="hidden text-xs text-white/30 sm:block">{exercisesWithLogs.length} exercises</div>
         </div>
       </div>
@@ -86,7 +102,7 @@ export default async function WorkoutDayPage({ params }: { params: Promise<{ day
               </div>
               <div className="h-px flex-1 bg-white/[0.05]"></div>
             </div>
-            <ExerciseCard exercise={ex} readOnly={user.isTrainerUser} />
+              <ExerciseCard exercise={ex} readOnly={user.isTrainerUser} targetUserId={targetUserId === user.id ? undefined : targetUserId} />
           </div>
         ))}
       </div>

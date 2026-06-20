@@ -34,7 +34,7 @@ export function canViewReadOnlyDashboard(user: Pick<AppUser, 'isAdmin' | 'isTrai
 }
 
 export function canUseCustomWorkout(user: Pick<AppUser, 'isAdmin' | 'isTrainer' | 'isTrainerUser'> | null | undefined) {
-  return Boolean(user) && !isTrainer(user) && !isTrainerUser(user);
+  return Boolean(user) && !isTrainerUser(user);
 }
 
 export function canAccessTrainerAssignedUsers(user: Pick<AppUser, 'isAdmin' | 'isTrainer'> | null | undefined) {

@@ -9,6 +9,7 @@ interface Props { exercise: Exercise; }
 interface Props {
   exercise: Exercise;
   readOnly?: boolean;
+  targetUserId?: string;
 }
 
 function DetailImage({ src, alt }: { src: string; alt: string }) {
@@ -62,7 +63,7 @@ function getExerciseTargetLabel(muscleGroup: string, exerciseName: string, defau
   return `${defaultReps} reps target`;
 }
 
-export default function ExerciseCard({ exercise, readOnly = false }: Props) {
+export default function ExerciseCard({ exercise, readOnly = false, targetUserId }: Props) {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
   const [completedSets, setCompletedSets] = useState(0);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -224,6 +225,7 @@ export default function ExerciseCard({ exercise, readOnly = false }: Props) {
             defaultReps={exercise.defaultReps}
             lastLog={lastLog}
             onSetComplete={handleSetComplete}
+            targetUserId={targetUserId}
           />
         )}
       </div>

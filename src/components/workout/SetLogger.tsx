@@ -21,6 +21,7 @@ interface Props {
   defaultReps: string;
   lastLog: WorkoutLog | null;
   onSetComplete: (log: WorkoutLog) => void;
+  targetUserId?: string;
 }
 
 type LogMode = 'timeDistance' | 'timeOnly' | 'weightDistance' | 'repsOnly' | 'strength';
@@ -68,6 +69,7 @@ export default function SetLogger({
   defaultReps,
   lastLog,
   onSetComplete,
+  targetUserId,
 }: Props) {
   const parseDefaultReps = (reps: string) => reps.includes('-') ? reps.split('-')[0] : reps;
   const logMode = getLogMode(muscleGroup, exerciseName);
@@ -140,6 +142,7 @@ export default function SetLogger({
         body: JSON.stringify({
           exerciseId,
           setNumber: setRow.setNumber,
+          ...(targetUserId ? { targetUserId } : {}),
           ...(hasWeight ? { weight: parseFloat(setRow.weight) } : {}),
           ...(hasReps ? { reps: parseInt(setRow.reps) } : {}),
           ...(hasDuration ? { durationSeconds } : {}),

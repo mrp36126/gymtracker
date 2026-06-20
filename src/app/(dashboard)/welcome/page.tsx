@@ -4,6 +4,7 @@ import { getTodayName } from '@/lib/day-resolver';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { canUseCustomWorkout } from '@/lib/rbac';
+import TrainerHomeOptions from '@/components/trainer/TrainerHomeOptions';
 
 export default async function WelcomePage() {
   let user;
@@ -23,6 +24,45 @@ export default async function WelcomePage() {
   if (!user) redirect('/login');
 
   const todayName = getTodayName();
+
+  const initials = user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  if (user.isTrainer && !user.isAdmin) {
+    const assignedUsers = await prisma.user.findMany({
+      where: { isTrainerUser: true, trainerId: user.id },
+      select: { id: true, name: true, email: true },
+      orderBy: [{ name: 'asc' }, { email: 'asc' }],
+    });
+
+    return (
+      <main className="min-h-screen bg-[#0A0A0F] pb-24">
+        <nav className="bg-white/[0.03] border-b border-white/[0.06] px-6 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-10">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+            <span className="font-bold text-sm tracking-tight">GymTracker</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-white/40 font-medium">{todayName}</span>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">
+              {initials}
+            </div>
+          </div>
+        </nav>
+
+        <div className="px-4 pt-7 pb-4 w-full max-w-6xl mx-auto">
+          <div className="mb-7">
+            <p className="text-xs font-semibold tracking-widest text-indigo-400 uppercase mb-1">{greeting}</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white">Trainer Home</h1>
+            <p className="text-sm text-white/40 mt-1">Choose how you want to train, coach, and review your assigned users today.</p>
+          </div>
+
+          <TrainerHomeOptions assignedUsers={assignedUsers} todayName={todayName} />
+        </div>
+      </main>
+    );
+  }
 
   let activeProgram = null;
   let supplementaryPrograms: any[] = [];
@@ -53,9 +93,6 @@ export default async function WelcomePage() {
   const otherSupplementaryPrograms = supplementaryPrograms.filter((program: any) =>
     program.id !== hyroxProgram?.id
   );
-  const initials = user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
     <main className="min-h-screen bg-[#0A0A0F] pb-24">

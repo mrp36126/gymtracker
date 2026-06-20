@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { findActivePrimaryProgramForUser, findExerciseForUser } from '@/lib/program-scope';
+import { resolveManagedTargetUser } from '@/lib/trainer-context';
 import { z } from 'zod';
 
 const SetSchema = z.object({
@@ -11,6 +12,7 @@ const SetSchema = z.object({
   reps:       z.number().int().positive().optional(),
   durationSeconds: z.number().int().positive().optional(),
   distanceKm: z.number().positive().optional(),
+  targetUserId: z.string().cuid().optional(),
 });
 
 type LogMode = 'timeDistance' | 'timeOnly' | 'weightDistance' | 'repsOnly' | 'strength';
@@ -51,13 +53,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Trainer users are read-only' }, { status: 403 });
   }
 
-  if (!user!.isAdmin) {
-    const activePrimaryProgram = await findActivePrimaryProgramForUser(user!.id);
-    if (!activePrimaryProgram) {
-      return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
-    }
-  }
-
   let body: z.infer<typeof SetSchema>;
   try {
     body = SetSchema.parse(await req.json());
@@ -68,7 +63,21 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const exercise = await findExerciseForUser(body.exerciseId, user!.id);
+  const targetUser = await resolveManagedTargetUser(user!, body.targetUserId);
+  if (!targetUser) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const targetUserId = targetUser.id;
+
+  if (!user!.isAdmin) {
+    const activePrimaryProgram = await findActivePrimaryProgramForUser(targetUserId);
+    if (!activePrimaryProgram) {
+      return NextResponse.json({ error: 'Program assignment required' }, { status: 403 });
+    }
+  }
+
+  const exercise = await findExerciseForUser(body.exerciseId, targetUserId);
   if (!exercise) {
     return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
   }
@@ -103,7 +112,7 @@ export async function POST(req: NextRequest) {
       durationSeconds: logMode === 'timeDistance' || logMode === 'timeOnly' ? body.durationSeconds : null,
       distanceKm: logMode === 'timeDistance' || logMode === 'weightDistance' ? body.distanceKm : null,
       notes:      `Set ${body.setNumber}`,
-      userId:     user!.id,
+      userId:     targetUserId,
       exerciseId: body.exerciseId,
     },
   });
