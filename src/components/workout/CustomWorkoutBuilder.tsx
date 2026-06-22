@@ -63,6 +63,8 @@ export default function CustomWorkoutBuilder({ exercises }: Props) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [selected, setSelected] = useState<SelectedExercise[]>([]);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState('');
 
   const categories = useMemo(() => {
     return ['All', ...Array.from(new Set(exercises.map((exercise) => exercise.category))).sort()];
@@ -131,15 +133,44 @@ export default function CustomWorkoutBuilder({ exercises }: Props) {
     );
   };
 
-  const beginWorkout = () => {
+  const beginWorkout = async () => {
     if (selected.length === 0) return;
 
-    window.localStorage.setItem(CUSTOM_WORKOUT_STORAGE_KEY, JSON.stringify({
-      startedAt: new Date().toISOString(),
-      exercises: selected,
-    }));
-    startWorkout('Custom Workout');
-    router.push('/custom-workout/session');
+    setStarting(true);
+    setStartError('');
+
+    try {
+      window.localStorage.setItem(CUSTOM_WORKOUT_STORAGE_KEY, JSON.stringify({
+        startedAt: new Date().toISOString(),
+        exercises: selected,
+      }));
+
+      const response = await fetch('/api/custom-workout/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exercises: selected.map((item) => ({
+            exerciseId: item.exercise.id,
+            sets: item.sets ? Number(item.sets) : undefined,
+            reps: item.reps || undefined,
+            notes: item.notes || undefined,
+          })),
+        }),
+      });
+
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || 'Unable to start custom workout');
+      }
+
+      startWorkout('Custom Workout');
+      router.push(`/workout/${String(json.data.day).toLowerCase()}`);
+      router.refresh();
+    } catch (err: any) {
+      setStartError(err.message || 'Unable to start custom workout');
+    } finally {
+      setStarting(false);
+    }
   };
 
   return (
@@ -268,11 +299,17 @@ export default function CustomWorkoutBuilder({ exercises }: Props) {
           <button
             type="button"
             onClick={beginWorkout}
-            disabled={selected.length === 0}
+            disabled={selected.length === 0 || starting}
             className="mb-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-white/25"
           >
-            Begin
+            {starting ? 'Starting...' : 'Begin'}
           </button>
+
+          {startError && (
+            <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200 whitespace-pre-wrap">
+              {startError}
+            </div>
+          )}
 
           {selected.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-white/[0.12] bg-black/10 p-6 text-center">
