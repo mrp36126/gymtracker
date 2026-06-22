@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { findActivePrimaryProgramForUser, findExerciseForUser } from '@/lib/program-scope';
 import { resolveManagedTargetUser } from '@/lib/trainer-context';
+import { getStartOfTodayInSAST } from '@/lib/timezone';
 import { z } from 'zod';
 
 const SetSchema = z.object({

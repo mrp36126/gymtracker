@@ -1,6 +1,5 @@
 import { getAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getTodayName } from '@/lib/day-resolver';
 import { getStartOfTodayInSAST } from '@/lib/timezone';
 import { redirect } from 'next/navigation';
 import ExerciseCard from '@/components/workout/ExerciseCard';
