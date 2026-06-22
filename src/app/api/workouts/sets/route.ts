@@ -69,8 +69,7 @@ export async function POST(req: NextRequest) {
   }
 
   const targetUserId = targetUser.id;
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = getStartOfTodayInSAST();
 
   const activePrimaryProgram = targetUser.isTrainerUser
     ? await prisma.program.findFirst({

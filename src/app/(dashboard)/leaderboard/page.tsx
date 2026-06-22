@@ -7,6 +7,7 @@ function formatCapturedAt(date: Date) {
   return new Intl.DateTimeFormat('en', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: 'Africa/Johannesburg',
   }).format(date);
 }
 

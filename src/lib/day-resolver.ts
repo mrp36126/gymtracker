@@ -1,3 +1,5 @@
+import { getNowInSAST } from './timezone';
+
 export type DayName =
   | 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday'
   | 'Thursday' | 'Friday' | 'Saturday';
@@ -8,7 +10,7 @@ const DAYS: DayName[] = [
 ];
 
 export function getTodayName(): DayName {
-  return DAYS[new Date().getDay()];
+  return DAYS[getNowInSAST().getDay()];
 }
 
 export function getDayName(index: number): DayName {

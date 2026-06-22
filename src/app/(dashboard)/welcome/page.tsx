@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { canUseFlexibleSession, canUseTrainerCustomWorkout, isIndividualUser } from '@/lib/rbac';
 import TrainerHomeOptions from '@/components/trainer/TrainerHomeOptions';
+import { getStartOfTodayInSAST, getDateXDaysAgoInSAST } from '@/lib/timezone';
 
 export default async function WelcomePage() {
   let user;
@@ -26,7 +27,7 @@ export default async function WelcomePage() {
   const todayName = getTodayName();
 
   const initials = user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
-  const hour = new Date().getHours();
+  const hour = (await import('@/lib/timezone')).getNowInSAST().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   if (user.isTrainer && !user.isAdmin) {
@@ -71,8 +72,7 @@ export default async function WelcomePage() {
 
   try {
     if (user.isTrainerUser) {
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
+      const startOfToday = getStartOfTodayInSAST();
       activeProgram = await prisma.program.findFirst({
         where: {
           isActive: true,
@@ -96,8 +96,7 @@ export default async function WelcomePage() {
     }
 
     if (user.isTrainerUser) {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgo = getDateXDaysAgoInSAST(30);
       lastMonthLogCount = await prisma.workoutLog.count({
         where: {
           userId: user.id,

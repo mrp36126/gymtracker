@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth';
 import { loadExerciseCatalog } from '@/lib/exercise-catalog';
 import { prisma } from '@/lib/prisma';
 import { getTodayName } from '@/lib/day-resolver';
+import { getNowInSAST, getStartOfTodayInSAST } from '@/lib/timezone';
 
 const SelectedCustomExerciseSchema = z.object({
   exerciseId: z.string().min(1),
@@ -49,9 +50,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Unknown exercise id(s): ${unknownExercises.join(', ')}` }, { status: 422 });
   }
 
-  const now = new Date();
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
+  const now = getNowInSAST();
+  const startOfToday = getStartOfTodayInSAST();
   const todayName = getTodayName();
   const name = `Custom Session · ${sessionDateKey(now)}`;
 

@@ -31,8 +31,7 @@ export default async function WorkoutDayPage({
   const targetUserId = targetUser.id;
   const targetUserName = targetUserId === user.id ? user.name : targetUser.name ?? 'Selected user';
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = getStartOfTodayInSAST();
 
   const program = targetUser.isTrainerUser
     ? await prisma.program.findFirst({
