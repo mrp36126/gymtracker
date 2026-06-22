@@ -40,7 +40,7 @@ export default async function LeaderboardPage() {
   const groupedLeaders = new Map<
     string,
     {
-      exerciseId: string;
+      exerciseKey: string;
       exerciseName: string;
       entries: Array<{
         userId: string;
@@ -53,10 +53,11 @@ export default async function LeaderboardPage() {
   >();
 
   for (const log of logs) {
-    const existingGroup = groupedLeaders.get(log.exerciseId);
+    const exerciseKey = log.exercise.name.trim().toLowerCase();
+    const existingGroup = groupedLeaders.get(exerciseKey);
     if (!existingGroup) {
-      groupedLeaders.set(log.exerciseId, {
-        exerciseId: log.exerciseId,
+      groupedLeaders.set(exerciseKey, {
+        exerciseKey,
         exerciseName: log.exercise.name,
         entries: [
           {
@@ -83,10 +84,12 @@ export default async function LeaderboardPage() {
     });
   }
 
-  const leaderboardByExercise = Array.from(groupedLeaders.values()).map((group) => ({
-    ...group,
-    entries: group.entries.slice(0, 10),
-  }));
+  const leaderboardByExercise = Array.from(groupedLeaders.values())
+    .map((group) => ({
+      ...group,
+      entries: group.entries.slice(0, 10),
+    }))
+    .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
 
   return (
     <main className="min-h-screen bg-[#0A0A0F] pb-24">
@@ -116,14 +119,14 @@ export default async function LeaderboardPage() {
           <div className="space-y-6">
             {leaderboardByExercise.map((exerciseGroup) => (
               <section
-                key={exerciseGroup.exerciseId}
+                key={exerciseGroup.exerciseKey}
                 className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4"
               >
                 <h2 className="text-lg font-extrabold text-white mb-3">{exerciseGroup.exerciseName}</h2>
                 <div className="space-y-3">
                   {exerciseGroup.entries.map((entry, index) => (
                     <div
-                      key={`${exerciseGroup.exerciseId}-${entry.userId}`}
+                      key={`${exerciseGroup.exerciseKey}-${entry.userId}`}
                       className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3"
                     >
                       <div className="flex items-center justify-between gap-3">
