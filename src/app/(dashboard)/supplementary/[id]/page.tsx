@@ -15,7 +15,6 @@ export default async function SupplementaryProgramPage({
 }) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
-  if (user.isTrainerUser) redirect('/welcome');
 
   if (!isAdmin(user) && !isTrainer(user)) {
     const activePrimaryProgram = await findActivePrimaryProgramForUser(user.id);
@@ -25,7 +24,12 @@ export default async function SupplementaryProgramPage({
   const { id } = await params;
 
   const program = await prisma.program.findFirst({
-    where: { id, programType: 'supplementary', isActive: true, userId: user.id },
+    where: {
+      id,
+      programType: 'supplementary',
+      isActive: true,
+      userId: user.isTrainerUser && user.trainerId ? user.trainerId : user.id,
+    },
     include: {
       exercises: { orderBy: [{ day: 'asc' }, { order: 'asc' }] },
     },
