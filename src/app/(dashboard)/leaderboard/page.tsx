@@ -14,30 +14,79 @@ export default async function LeaderboardPage() {
   const user = await getAuthUser();
   if (!user) redirect('/login');
 
-  const users = await prisma.user.findMany({
-    orderBy: { name: 'asc' },
+  const logs = await prisma.workoutLog.findMany({
     include: {
-      workoutLogs: {
-        orderBy: { weight: 'desc' },
-        take: 1,
-        include: { exercise: true },
+      user: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      exercise: {
+        select: {
+          id: true,
+          name: true,
+        },
       },
     },
+    orderBy: [
+      { exercise: { name: 'asc' } },
+      { weight: 'desc' },
+      { reps: 'desc' },
+      { loggedAt: 'desc' },
+    ],
   });
 
-  const leaders = users
-    .map((userRecord) => ({
-      id: userRecord.id,
-      name: userRecord.name,
-      bestLift: userRecord.workoutLogs[0] ?? null,
-    }))
-    .sort((a, b) => {
-      if (!a.bestLift && !b.bestLift) return a.name.localeCompare(b.name);
-      if (!a.bestLift) return 1;
-      if (!b.bestLift) return -1;
-      if (b.bestLift.weight !== a.bestLift.weight) return b.bestLift.weight - a.bestLift.weight;
-      return a.name.localeCompare(b.name);
+  const groupedLeaders = new Map<
+    string,
+    {
+      exerciseId: string;
+      exerciseName: string;
+      entries: Array<{
+        userId: string;
+        userName: string;
+        weight: number;
+        reps: number;
+        loggedAt: Date;
+      }>;
+    }
+  >();
+
+  for (const log of logs) {
+    const existingGroup = groupedLeaders.get(log.exerciseId);
+    if (!existingGroup) {
+      groupedLeaders.set(log.exerciseId, {
+        exerciseId: log.exerciseId,
+        exerciseName: log.exercise.name,
+        entries: [
+          {
+            userId: log.userId,
+            userName: log.user.name,
+            weight: log.weight,
+            reps: log.reps,
+            loggedAt: log.loggedAt,
+          },
+        ],
+      });
+      continue;
+    }
+
+    const userAlreadyRanked = existingGroup.entries.some((entry) => entry.userId === log.userId);
+    if (userAlreadyRanked) continue;
+
+    existingGroup.entries.push({
+      userId: log.userId,
+      userName: log.user.name,
+      weight: log.weight,
+      reps: log.reps,
+      loggedAt: log.loggedAt,
     });
+  }
+
+  const leaderboardByExercise = Array.from(groupedLeaders.values()).map((group) => ({
+    ...group,
+    entries: group.entries.slice(0, 10),
+  }));
 
   return (
     <main className="min-h-screen bg-[#0A0A0F] pb-24">
@@ -50,62 +99,61 @@ export default async function LeaderboardPage() {
       <div className="max-w-lg mx-auto px-4 pt-6 w-full">
         <div className="mb-5">
           <p className="text-xs font-semibold tracking-widest text-indigo-400 uppercase mb-1">Leaderboard</p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white">All users ranked by heaviest lift</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white">Top 10 users per exercise</h1>
           <p className="text-sm text-white/40 mt-1">
-            All app users are listed from heaviest to lightest best recorded lift.
+            Each exercise shows up to 10 users ranked by their heaviest recorded lift for that exercise.
           </p>
         </div>
 
-        {leaders.length === 0 ? (
+        {leaderboardByExercise.length === 0 ? (
           <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-10 text-center">
-            <p className="text-white/40 text-sm">No users are available yet.</p>
+            <p className="text-white/40 text-sm">No exercise entries have been logged yet.</p>
             <Link href="/welcome" className="text-indigo-400 text-sm mt-2 inline-block">
               Back to home →
             </Link>
           </div>
         ) : (
-          <div className="space-y-3">
-            {leaders.map((entry, index) => (
-              <div
-                key={entry.id}
-                className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-4"
+          <div className="space-y-6">
+            {leaderboardByExercise.map((exerciseGroup) => (
+              <section
+                key={exerciseGroup.exerciseId}
+                className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
-                        {index + 1}
-                      </span>
-                      <p className="truncate text-base font-extrabold text-white">{entry.name}</p>
-                    </div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/25">
-                      {entry.bestLift ? entry.bestLift.exercise.name : 'No lifts logged yet'}
-                    </p>
-                  </div>
+                <h2 className="text-lg font-extrabold text-white mb-3">{exerciseGroup.exerciseName}</h2>
+                <div className="space-y-3">
+                  {exerciseGroup.entries.map((entry, index) => (
+                    <div
+                      key={`${exerciseGroup.exerciseId}-${entry.userId}`}
+                      className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
+                              {index + 1}
+                            </span>
+                            <p className="truncate text-base font-extrabold text-white">{entry.userName}</p>
+                          </div>
+                        </div>
 
-                  <div className="text-right">
-                    <p className="text-xl font-extrabold tabular-nums text-white">
-                      {entry.bestLift ? `${entry.bestLift.weight.toLocaleString()}kg` : '—'}
-                    </p>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
-                      {entry.bestLift ? `${entry.bestLift.reps} reps` : ''}
-                    </p>
-                  </div>
+                        <div className="text-right">
+                          <p className="text-xl font-extrabold tabular-nums text-white">
+                            {`${entry.weight.toLocaleString()}kg`}
+                          </p>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
+                            {`${entry.reps} reps`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 border-t border-white/[0.06] pt-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/25">Logged</p>
+                        <p className="truncate text-sm font-bold text-white/80">{formatCapturedAt(entry.loggedAt)}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                {entry.bestLift && (
-                  <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 border-t border-white/[0.06] pt-3">
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/25">Logged</p>
-                      <p className="truncate text-sm font-bold text-white/80">{formatCapturedAt(entry.bestLift.loggedAt)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/25">Exercise</p>
-                      <p className="text-xs font-semibold text-white/55">{entry.bestLift.exercise.name}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              </section>
             ))}
           </div>
         )}
