@@ -174,18 +174,20 @@ export default async function WelcomePage() {
               </div>
             ))}
 
-            <Link href={hyroxProgram ? '/supplementary/' + hyroxProgram.id : '/hyrox'} className="block">
-              <div className="relative bg-white/[0.04] border border-purple-500/20 rounded-2xl p-5 hover:border-purple-500/40 hover:bg-white/[0.06] transition">
-                <p className="text-xs font-semibold tracking-widest text-purple-300/60 uppercase mb-2">Hyrox</p>
-                  <p className="text-xl font-extrabold text-white tracking-tight">
-                    {hyroxProgram ? hyroxProgram.name : 'Hyrox'}
-                  </p>
-                  <p className="text-sm text-white/45 mt-1">
-                    {hyroxProgram?.description || 'Conditioning-focused workout option.'}
-                  </p>
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-purple-300/50 text-xl">-&gt;</div>
-              </div>
-            </Link>
+            {!user.isTrainerUser && (
+              <Link href={hyroxProgram ? '/supplementary/' + hyroxProgram.id : '/hyrox'} className="block">
+                <div className="relative bg-white/[0.04] border border-purple-500/20 rounded-2xl p-5 hover:border-purple-500/40 hover:bg-white/[0.06] transition">
+                  <p className="text-xs font-semibold tracking-widest text-purple-300/60 uppercase mb-2">Hyrox</p>
+                    <p className="text-xl font-extrabold text-white tracking-tight">
+                      {hyroxProgram ? hyroxProgram.name : 'Hyrox'}
+                    </p>
+                    <p className="text-sm text-white/45 mt-1">
+                      {hyroxProgram?.description || 'Conditioning-focused workout option.'}
+                    </p>
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2 text-purple-300/50 text-xl">-&gt;</div>
+                </div>
+              </Link>
+            )}
 
             {canUseFlexibleSession(user) && (
               <Link href="/custom-workout" className="block">
