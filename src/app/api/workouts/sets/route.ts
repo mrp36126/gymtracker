@@ -49,10 +49,6 @@ export async function POST(req: NextRequest) {
   const { user, response } = await requireAuth();
   if (response) return response;
 
-  if (user!.isTrainerUser) {
-    return NextResponse.json({ error: 'Trainer users are read-only' }, { status: 403 });
-  }
-
   let body: z.infer<typeof SetSchema>;
   try {
     body = SetSchema.parse(await req.json());
@@ -66,6 +62,10 @@ export async function POST(req: NextRequest) {
   const targetUser = await resolveManagedTargetUser(user!, body.targetUserId);
   if (!targetUser) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  if (targetUser.isTrainerUser) {
+    return NextResponse.json({ error: 'Trainer users are read-only' }, { status: 403 });
   }
 
   const targetUserId = targetUser.id;

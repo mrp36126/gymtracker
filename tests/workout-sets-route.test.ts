@@ -47,7 +47,7 @@ describe('workout sets route', () => {
     prismaMock.workoutLog.create.mockResolvedValue({ id: 'log-1' });
   });
 
-  it('allows a trainer to log a set for an assigned trainer user', async () => {
+  it('blocks logging a set when the target user is a trainer user', async () => {
     prismaMock.user.findUnique.mockResolvedValueOnce({
       id: 'cmcuid000000000000000099',
       trainerId: 'trainer-1',
@@ -68,13 +68,34 @@ describe('workout sets route', () => {
       headers: { 'Content-Type': 'application/json' },
     }));
 
-    expect(response.status).toBe(201);
-    expect(prismaMock.program.findFirst).toHaveBeenCalled();
-    expect(prismaMock.exercise.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ id: 'cmcuid000000000000000001' }),
+    expect(response.status).toBe(403);
+    expect(prismaMock.workoutLog.create).not.toHaveBeenCalled();
+  });
+
+  it('allows logging a set when the target user is an individual user', async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce({
+      id: 'cmcuid000000000000000101',
+      trainerId: 'trainer-1',
+      isTrainerUser: false,
+      isAdmin: false,
+      isTrainer: false,
+    });
+
+    const response = await POST(new Request('http://localhost/api/workouts/sets', {
+      method: 'POST',
+      body: JSON.stringify({
+        exerciseId: 'cmcuid000000000000000001',
+        setNumber: 1,
+        weight: 100,
+        reps: 8,
+        targetUserId: 'cmcuid000000000000000101',
+      }),
+      headers: { 'Content-Type': 'application/json' },
     }));
+
+    expect(response.status).toBe(201);
     expect(prismaMock.workoutLog.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ userId: 'cmcuid000000000000000099' }),
+      data: expect.objectContaining({ userId: 'cmcuid000000000000000101' }),
     }));
   });
 

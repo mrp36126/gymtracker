@@ -119,7 +119,7 @@ export default async function WorkoutDayPage({
               </div>
               <div className="h-px flex-1 bg-white/[0.05]"></div>
             </div>
-              <ExerciseCard exercise={ex} readOnly={user.isTrainerUser} targetUserId={targetUserId === user.id ? undefined : targetUserId} />
+              <ExerciseCard exercise={ex} readOnly={Boolean(targetUser.isTrainerUser)} targetUserId={targetUserId === user.id ? undefined : targetUserId} />
           </div>
         ))}
       </div>
