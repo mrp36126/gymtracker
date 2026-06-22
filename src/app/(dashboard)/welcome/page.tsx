@@ -59,7 +59,7 @@ export default async function WelcomePage() {
             <p className="text-sm text-white/40 mt-1">Choose how you want to train, coach, and review your assigned users today.</p>
           </div>
 
-          <TrainerHomeOptions assignedUsers={assignedUsers} todayName={todayName} />
+          <TrainerHomeOptions assignedUsers={assignedUsers} />
         </div>
       </main>
     );

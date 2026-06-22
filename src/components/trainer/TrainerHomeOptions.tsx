@@ -12,12 +12,11 @@ interface AssignedTrainerUser {
 
 interface Props {
   assignedUsers: AssignedTrainerUser[];
-  todayName: string;
 }
 
 const SELECTED_TRAINER_USER_STORAGE_KEY = 'gymtracker.selectedTrainerUserId';
 
-export default function TrainerHomeOptions({ assignedUsers, todayName }: Props) {
+export default function TrainerHomeOptions({ assignedUsers }: Props) {
   const router = useRouter();
   const [selectedUserId, setSelectedUserId] = useState('');
 
