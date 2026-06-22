@@ -37,6 +37,15 @@ export function canUseCustomWorkout(user: Pick<AppUser, 'isAdmin' | 'isTrainer' 
   return Boolean(user) && !isTrainerUser(user);
 }
 
+export function canUseFlexibleSession(user: Pick<AppUser, 'isAdmin' | 'isTrainer' | 'isTrainerUser'> | null | undefined) {
+  if (!user) return false;
+  return isAdmin(user) || isIndividualUser(user);
+}
+
+export function canUseTrainerCustomWorkout(user: Pick<AppUser, 'isTrainer'> | null | undefined) {
+  return isTrainer(user);
+}
+
 export function canAccessTrainerAssignedUsers(user: Pick<AppUser, 'isAdmin' | 'isTrainer'> | null | undefined) {
   return isAdmin(user) || isTrainer(user);
 }

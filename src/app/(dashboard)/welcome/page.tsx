@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getTodayName } from '@/lib/day-resolver';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { canUseCustomWorkout } from '@/lib/rbac';
+import { canUseFlexibleSession, canUseTrainerCustomWorkout, isIndividualUser } from '@/lib/rbac';
 import TrainerHomeOptions from '@/components/trainer/TrainerHomeOptions';
 
 export default async function WelcomePage() {
@@ -149,7 +149,7 @@ export default async function WelcomePage() {
         <div className="mb-6">
           <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-3">Choose Today&apos;s Workout</p>
           <div className="grid gap-3">
-            {activeProgram ? (
+            {(user.isAdmin || isIndividualUser(user)) && (activeProgram ? (
               <Link href={'/workout/' + todayName.toLowerCase()} className="block">
                 <div className="relative bg-indigo-600 rounded-2xl p-6 overflow-hidden hover:bg-indigo-500 transition">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-8 translate-x-8"></div>
@@ -172,24 +172,22 @@ export default async function WelcomePage() {
                   <p className="text-sm text-white/45 mt-2">Your administrator can assign a program when it is ready.</p>
                 )}
               </div>
-            )}
+            ))}
 
-            {!user.isTrainerUser && (
-              <Link href={hyroxProgram ? '/supplementary/' + hyroxProgram.id : '/hyrox'} className="block">
-                <div className="relative bg-white/[0.04] border border-purple-500/20 rounded-2xl p-5 hover:border-purple-500/40 hover:bg-white/[0.06] transition">
-                  <p className="text-xs font-semibold tracking-widest text-purple-300/60 uppercase mb-2">Hyrox</p>
+            <Link href={hyroxProgram ? '/supplementary/' + hyroxProgram.id : '/hyrox'} className="block">
+              <div className="relative bg-white/[0.04] border border-purple-500/20 rounded-2xl p-5 hover:border-purple-500/40 hover:bg-white/[0.06] transition">
+                <p className="text-xs font-semibold tracking-widest text-purple-300/60 uppercase mb-2">Hyrox</p>
                   <p className="text-xl font-extrabold text-white tracking-tight">
                     {hyroxProgram ? hyroxProgram.name : 'Hyrox'}
                   </p>
                   <p className="text-sm text-white/45 mt-1">
                     {hyroxProgram?.description || 'Conditioning-focused workout option.'}
                   </p>
-                  <div className="absolute right-5 top-1/2 -translate-y-1/2 text-purple-300/50 text-xl">-&gt;</div>
-                </div>
-              </Link>
-            )}
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-purple-300/50 text-xl">-&gt;</div>
+              </div>
+            </Link>
 
-            {canUseCustomWorkout(user) && (
+            {canUseFlexibleSession(user) && (
               <Link href="/custom-workout" className="block">
                 <div className="relative bg-white/[0.04] border border-emerald-500/20 rounded-2xl p-5 hover:border-emerald-500/40 hover:bg-white/[0.06] transition">
                   <p className="text-xs font-semibold tracking-widest text-emerald-300/60 uppercase mb-2">Flexible Session</p>
@@ -311,6 +309,14 @@ export default async function WelcomePage() {
                 <p className="text-lg font-extrabold text-white">Charts</p>
               </div>
             </Link>
+            {canUseTrainerCustomWorkout(user) && (
+              <Link href="/custom-workout" className="block">
+                <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
+                  <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Flexible Session</p>
+                  <p className="text-lg font-extrabold text-white">My Own Workout</p>
+                </div>
+              </Link>
+            )}
             <Link href="/leaderboard" className="block">
               <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition">
                 <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Leaderboard</p>
