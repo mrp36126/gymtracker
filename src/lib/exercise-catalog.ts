@@ -61,10 +61,7 @@ async function loadCatalogFromCsv(): Promise<ExerciseCatalogItem[]> {
   return items;
 }
 
-async function seedCatalogFromCsvIfNeeded() {
-  const existingCount = await prisma.exerciseCatalog.count();
-  if (existingCount > 0) return;
-
+async function syncCatalogFromCsv() {
   const csvItems = await loadCatalogFromCsv();
   await prisma.exerciseCatalog.createMany({
     data: csvItems.map((item) => ({
@@ -86,7 +83,7 @@ async function seedCatalogFromCsvIfNeeded() {
 
 export async function loadExerciseCatalog(): Promise<ExerciseCatalogItem[]> {
   try {
-    await seedCatalogFromCsvIfNeeded();
+    await syncCatalogFromCsv();
 
     const catalog = await prisma.exerciseCatalog.findMany({
       orderBy: [{ exerciseName: 'asc' }, { id: 'asc' }],
