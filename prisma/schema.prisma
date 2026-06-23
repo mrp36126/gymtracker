@@ -81,3 +81,21 @@ model WorkoutLog {
   @@index([userId, exerciseId, loggedAt(sort: Desc)])
   @@map("workout_logs")
 }
+
+model ExerciseCatalog {
+  id               String   @id
+  exerciseName     String
+  category         String
+  primaryMuscles   String[]
+  secondaryMuscles String[]
+  equipment        String
+  difficulty       String
+  description      String
+  instructions     String
+  imageUrl         String?
+  detailImageUrl   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("exercise_catalog")
+}

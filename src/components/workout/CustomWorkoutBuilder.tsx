@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ExerciseCatalogItem } from '@/types';
 import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
+import { getExpectedExerciseImageNames, hasPendingCardImage } from '@/lib/exercise-images';
 
 type SelectedExercise = {
   instanceId: string;
@@ -233,6 +234,16 @@ export default function CustomWorkoutBuilder({ exercises }: Props) {
                   <div className="mb-3">
                     <h2 className="text-base font-extrabold tracking-tight text-white">{exercise.exerciseName}</h2>
                     <p className="mt-1 text-xs leading-5 text-white/45">{exercise.description}</p>
+                    {hasPendingCardImage(exercise) ? (
+                      <p className="mt-1 text-[10px] text-amber-300/80">
+                        Image pending upload. Expected filename: {getExpectedExerciseImageNames(exercise).card}
+                      </p>
+                    ) : null}
+                    {!exercise.detailImageUrl && (
+                      <p className="mt-1 text-[10px] text-amber-300/80">
+                        Detail image pending: {getExpectedExerciseImageNames(exercise).detail}
+                      </p>
+                    )}
                   </div>
 
                   <div className="mb-3 grid grid-cols-2 gap-2 text-xs">

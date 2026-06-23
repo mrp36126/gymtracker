@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ExerciseCatalogItem } from '@/types';
+import { getExpectedExerciseImageNames, hasPendingCardImage } from '@/lib/exercise-images';
 
 interface TrainerUser {
   id: string;
@@ -319,13 +320,27 @@ export default function TrainerPanel({ programs, assignedUsers, availableUsers, 
               <p className="p-4 text-sm text-white/35">No exercises found.</p>
             ) : filteredCatalog.map((exercise) => (
               <div key={exercise.id} className="grid gap-3 border-b border-white/[0.04] p-3 last:border-b-0 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                <div className="h-12 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-white/[0.04]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={exercise.imageUrl} alt="" className="h-full w-full object-contain" />
+                <div className="w-28 flex-shrink-0">
+                  <div className="h-16 w-full overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                    {hasPendingCardImage(exercise) ? (
+                      <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                        Pending image
+                      </div>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={exercise.imageUrl} alt={exercise.exerciseName} className="h-full w-full object-contain" />
+                    )}
+                  </div>
+                  {hasPendingCardImage(exercise) && (
+                    <p className="mt-1 text-[10px] text-white/35">Expected: {getExpectedExerciseImageNames(exercise).card}</p>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-white">{exercise.exerciseName}</p>
                   <p className="truncate text-[10px] uppercase tracking-widest text-white/30">{exercise.category} · {muscleLabel(exercise.primaryMuscles)}</p>
+                  {!exercise.detailImageUrl && (
+                    <p className="mt-1 text-[10px] text-amber-300/80">Detail image pending: {getExpectedExerciseImageNames(exercise).detail}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-2 sm:w-56">
                   <select value={catalogDays[exercise.id] ?? defaultExerciseDay} onChange={(event) => setCatalogDays((prev) => ({ ...prev, [exercise.id]: event.target.value }))} aria-label={`Day for ${exercise.exerciseName}`} className="min-w-0 rounded-lg border border-white/[0.08] bg-white/[0.06] px-2 py-2 text-xs text-white transition focus:outline-none focus:border-indigo-500/50">

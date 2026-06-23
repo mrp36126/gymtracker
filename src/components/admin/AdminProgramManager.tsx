@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { ExerciseCatalogItem } from '@/types';
+import { getExpectedExerciseImageNames, hasPendingCardImage } from '@/lib/exercise-images';
 
 interface Program {
   id: string;
@@ -50,6 +51,7 @@ function muscleLabel(muscles: string[]) {
 export default function AdminProgramManager({ programs: initial, users, waitingUsers, exerciseCatalog }: Props) {
   const router = useRouter();
   const [programs, setPrograms] = useState(initial);
+  const [catalog, setCatalog] = useState(exerciseCatalog);
   const [managedUsers, setManagedUsers] = useState(users);
   const [pendingUsers, setPendingUsers] = useState(waitingUsers);
   const [uploading, setUploading] = useState(false);
@@ -68,6 +70,26 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
   const [catalogQuery, setCatalogQuery] = useState('');
   const [catalogDays, setCatalogDays] = useState<Record<string, string>>({});
   const [programExercises, setProgramExercises] = useState<SelectedProgramExercise[]>([]);
+  const [exerciseModalOpen, setExerciseModalOpen] = useState(false);
+  const [exerciseModalMode, setExerciseModalMode] = useState<'create' | 'edit'>('create');
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
+  const [exerciseForm, setExerciseForm] = useState({
+    id: '',
+    exerciseName: '',
+    category: '',
+    primaryMuscles: '',
+    secondaryMuscles: '',
+    equipment: '',
+    difficulty: '',
+    description: '',
+    instructions: '',
+    imageUrl: '',
+    detailImageUrl: '',
+  });
+  const [exerciseSaving, setExerciseSaving] = useState(false);
+  const [cardImageFile, setCardImageFile] = useState<File | null>(null);
+  const [detailImageFile, setDetailImageFile] = useState<File | null>(null);
+  const [exerciseDeletingId, setExerciseDeletingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -179,7 +201,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
     }
   };
 
-  const filteredCatalog = exerciseCatalog.filter(exercise => {
+  const filteredCatalog = catalog.filter(exercise => {
     const query = catalogQuery.trim().toLowerCase();
     if (!query) return true;
 
@@ -207,6 +229,172 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
         notes: exercise.instructions,
       },
     ]);
+  };
+
+  const resetExerciseForm = () => {
+    setExerciseForm({
+      id: '',
+      exerciseName: '',
+      category: '',
+      primaryMuscles: '',
+      secondaryMuscles: '',
+      equipment: '',
+      difficulty: '',
+      description: '',
+      instructions: '',
+      imageUrl: '',
+      detailImageUrl: '',
+    });
+    setCardImageFile(null);
+    setDetailImageFile(null);
+    setEditingExerciseId(null);
+  };
+
+  const openCreateExerciseModal = () => {
+    setExerciseModalMode('create');
+    resetExerciseForm();
+    setExerciseModalOpen(true);
+  };
+
+  const openEditExerciseModal = (exercise: ExerciseCatalogItem) => {
+    setExerciseModalMode('edit');
+    setEditingExerciseId(exercise.id);
+    setExerciseForm({
+      id: exercise.id,
+      exerciseName: exercise.exerciseName,
+      category: exercise.category,
+      primaryMuscles: exercise.primaryMuscles.join(', '),
+      secondaryMuscles: exercise.secondaryMuscles.join(', '),
+      equipment: exercise.equipment,
+      difficulty: exercise.difficulty,
+      description: exercise.description,
+      instructions: exercise.instructions,
+      imageUrl: exercise.imageUrl || '',
+      detailImageUrl: exercise.detailImageUrl || '',
+    });
+    setExerciseModalOpen(true);
+  };
+
+  const parseMuscles = (value: string) => value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const uploadExerciseImage = async (exerciseId: string, file: File, mediaKind: 'card' | 'detail') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mediaKind', mediaKind);
+
+    const response = await fetch(`/api/exercises/${exerciseId}/media`, {
+      method: 'POST',
+      body: formData,
+    });
+    const json = await response.json();
+    if (!response.ok) {
+      throw new Error(json.error || `Failed to upload ${mediaKind} image`);
+    }
+
+    return json.data as { imageUrl?: string | null; detailImageUrl?: string | null };
+  };
+
+  const handleSaveExercise = async () => {
+    setExerciseSaving(true);
+    setError('');
+    try {
+      const payload = {
+        exerciseName: exerciseForm.exerciseName.trim(),
+        category: exerciseForm.category.trim(),
+        primaryMuscles: parseMuscles(exerciseForm.primaryMuscles),
+        secondaryMuscles: parseMuscles(exerciseForm.secondaryMuscles),
+        equipment: exerciseForm.equipment.trim(),
+        difficulty: exerciseForm.difficulty.trim(),
+        description: exerciseForm.description.trim(),
+        instructions: exerciseForm.instructions.trim(),
+      };
+
+      const endpoint = exerciseModalMode === 'create'
+        ? '/api/exercises'
+        : `/api/exercises/${editingExerciseId}`;
+      const method = exerciseModalMode === 'create' ? 'POST' : 'PATCH';
+
+      const body = exerciseModalMode === 'create'
+        ? { id: exerciseForm.id.trim() || undefined, ...payload }
+        : payload;
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || 'Failed to save exercise');
+
+      const normalizedExercise: ExerciseCatalogItem = {
+        id: json.data.id,
+        exerciseName: json.data.exerciseName,
+        category: json.data.category,
+        primaryMuscles: json.data.primaryMuscles,
+        secondaryMuscles: json.data.secondaryMuscles,
+        equipment: json.data.equipment,
+        difficulty: json.data.difficulty,
+        description: json.data.description,
+        instructions: json.data.instructions,
+        imageUrl: json.data.imageUrl || '',
+        detailImageUrl: json.data.detailImageUrl || '',
+      };
+
+      if (cardImageFile) {
+        const uploadData = await uploadExerciseImage(normalizedExercise.id, cardImageFile, 'card');
+        normalizedExercise.imageUrl = uploadData.imageUrl || normalizedExercise.imageUrl;
+      }
+
+      if (detailImageFile) {
+        const uploadData = await uploadExerciseImage(normalizedExercise.id, detailImageFile, 'detail');
+        normalizedExercise.detailImageUrl = uploadData.detailImageUrl || normalizedExercise.detailImageUrl;
+      }
+
+      setExerciseForm((current) => ({
+        ...current,
+        imageUrl: normalizedExercise.imageUrl || '',
+        detailImageUrl: normalizedExercise.detailImageUrl || '',
+      }));
+
+      if (exerciseModalMode === 'create') {
+        setCatalog((current) => [normalizedExercise, ...current]);
+        showSuccess('Exercise created.');
+      } else {
+        setCatalog((current) => current.map((item) => item.id === normalizedExercise.id ? normalizedExercise : item));
+        showSuccess('Exercise updated.');
+      }
+
+      setExerciseModalOpen(false);
+      resetExerciseForm();
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save exercise');
+    } finally {
+      setExerciseSaving(false);
+    }
+  };
+
+  const handleDeleteExercise = async (exercise: ExerciseCatalogItem) => {
+    if (!confirm(`Delete "${exercise.exerciseName}" from the exercise catalog?`)) return;
+
+    setExerciseDeletingId(exercise.id);
+    setError('');
+    try {
+      const response = await fetch(`/api/exercises/${exercise.id}`, { method: 'DELETE' });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || 'Failed to delete exercise');
+
+      setCatalog((current) => current.filter((item) => item.id !== exercise.id));
+      showSuccess('Exercise deleted.');
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete exercise');
+    } finally {
+      setExerciseDeletingId(null);
+    }
   };
 
   const updateProgramExercise = (
@@ -486,6 +674,16 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
           </div>
 
           <div>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/30">Search Exercise Pool</p>
+              <button
+                type="button"
+                onClick={openCreateExerciseModal}
+                className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300 transition hover:border-emerald-400/50 hover:bg-emerald-500/15"
+              >
+                Add New Exercise
+              </button>
+            </div>
             <input
               type="text"
               placeholder="Search exercise pool"
@@ -498,17 +696,31 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                 <p className="p-4 text-sm text-white/35">No exercises found.</p>
               ) : filteredCatalog.map(exercise => (
                 <div key={exercise.id} className="grid gap-3 border-b border-white/[0.04] p-3 last:border-b-0 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                  <div className="h-12 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-white/[0.04]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={exercise.imageUrl} alt="" className="h-full w-full object-contain" />
+                  <div className="w-28 flex-shrink-0">
+                    <div className="h-16 w-full overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                      {hasPendingCardImage(exercise) ? (
+                        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                          Pending image
+                        </div>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={exercise.imageUrl} alt={exercise.exerciseName} className="h-full w-full object-contain" />
+                      )}
+                    </div>
+                    {hasPendingCardImage(exercise) && (
+                      <p className="mt-1 text-[10px] text-white/35">Expected: {getExpectedExerciseImageNames(exercise).card}</p>
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-white">{exercise.exerciseName}</p>
                     <p className="truncate text-[10px] uppercase tracking-widest text-white/30">
                       {exercise.category} · {muscleLabel(exercise.primaryMuscles)}
                     </p>
+                    {!exercise.detailImageUrl && (
+                      <p className="mt-1 text-[10px] text-amber-300/80">Detail image pending: {getExpectedExerciseImageNames(exercise).detail}</p>
+                    )}
                   </div>
-                  <div className="grid grid-cols-[1fr_auto] gap-2 sm:w-56">
+                  <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 sm:w-[24rem]">
                     <select
                       value={catalogDays[exercise.id] ?? defaultExerciseDay}
                       onChange={e => setCatalogDays(prev => ({ ...prev, [exercise.id]: e.target.value }))}
@@ -527,6 +739,21 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                       className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
                     >
                       Add
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openEditExerciseModal(exercise)}
+                      className="rounded-lg border border-white/[0.12] bg-white/[0.06] px-3 py-2 text-xs font-bold text-white/70 transition hover:border-white/30 hover:text-white"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteExercise(exercise)}
+                      disabled={exerciseDeletingId === exercise.id}
+                      className="rounded-lg bg-red-500/10 px-3 py-2 text-xs font-bold text-red-300 transition hover:bg-red-500/15 disabled:opacity-50"
+                    >
+                      {exerciseDeletingId === exercise.id ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>
                 </div>
@@ -547,7 +774,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
             ) : (
               <div className="space-y-2">
                 {programExercises.map((item, index) => {
-                  const exercise = exerciseCatalog.find(ex => ex.id === item.exerciseId);
+                  const exercise = catalog.find(ex => ex.id === item.exerciseId);
                   if (!exercise) return null;
 
                   return (
@@ -569,6 +796,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                         <select
                           value={item.day}
                           onChange={e => updateProgramExercise(item.instanceId, 'day', e.target.value)}
+                          aria-label={`Selected day for ${exercise.exerciseName}`}
                           className="bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-indigo-500/50 transition"
                         >
                           {dayOptions.map(day => (
@@ -631,6 +859,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
               ref={fileRef}
               type="file"
               accept=".csv"
+              aria-label="Upload program CSV file"
               className="hidden"
               onChange={e => setSelectedFile(e.target.files?.[0] ?? null)}
             />
@@ -668,6 +897,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
                       ...prev,
                       [`quick-${waitingUser.id}`]: e.target.value,
                     }))}
+                    aria-label={`Select program for ${waitingUser.name}`}
                     className="bg-white/[0.06] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition"
                   >
                     <option value="">Choose a program</option>
@@ -879,6 +1109,108 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
           </div>
         )}
       </div>
+
+      {exerciseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#0A0A0F] p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">
+                {exerciseModalMode === 'create' ? 'Add New Exercise' : 'Edit Exercise'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setExerciseModalOpen(false)}
+                className="rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-1.5 text-xs font-bold text-white/60 transition hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {exerciseModalMode === 'create' && (
+                <input value={exerciseForm.id} onChange={(event) => setExerciseForm((prev) => ({ ...prev, id: event.target.value }))} placeholder="Exercise ID (optional, e.g. bench-press)" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
+              )}
+              <input value={exerciseForm.exerciseName} onChange={(event) => setExerciseForm((prev) => ({ ...prev, exerciseName: event.target.value }))} placeholder="Exercise name" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50" />
+              <input value={exerciseForm.category} onChange={(event) => setExerciseForm((prev) => ({ ...prev, category: event.target.value }))} placeholder="Category" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50" />
+              <input value={exerciseForm.equipment} onChange={(event) => setExerciseForm((prev) => ({ ...prev, equipment: event.target.value }))} placeholder="Equipment" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50" />
+              <input value={exerciseForm.difficulty} onChange={(event) => setExerciseForm((prev) => ({ ...prev, difficulty: event.target.value }))} placeholder="Difficulty" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50" />
+              <input value={exerciseForm.primaryMuscles} onChange={(event) => setExerciseForm((prev) => ({ ...prev, primaryMuscles: event.target.value }))} placeholder="Primary muscles (comma separated)" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
+              <input value={exerciseForm.secondaryMuscles} onChange={(event) => setExerciseForm((prev) => ({ ...prev, secondaryMuscles: event.target.value }))} placeholder="Secondary muscles (comma separated)" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
+              <textarea value={exerciseForm.description} onChange={(event) => setExerciseForm((prev) => ({ ...prev, description: event.target.value }))} rows={3} placeholder="Description" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
+              <textarea value={exerciseForm.instructions} onChange={(event) => setExerciseForm((prev) => ({ ...prev, instructions: event.target.value }))} rows={4} placeholder="Instructions" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 sm:col-span-2">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/35">Card image</p>
+                {exerciseForm.imageUrl ? (
+                  <div className="mb-2 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={exerciseForm.imageUrl} alt="Card preview" className="h-32 w-full object-contain" />
+                  </div>
+                ) : (
+                  <div className="mb-2 flex h-24 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                    Pending image upload
+                  </div>
+                )}
+                <p className="mb-2 text-[10px] text-white/35">
+                  Expected filename: {getExpectedExerciseImageNames({ id: exerciseForm.id || 'new-exercise', exerciseName: exerciseForm.exerciseName || 'exercise-name' }).card}
+                </p>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={(event) => setCardImageFile(event.target.files?.[0] ?? null)}
+                  aria-label="Upload card image"
+                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-xs text-white file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-2 file:py-1 file:text-xs file:font-bold file:text-white"
+                />
+              </div>
+
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 sm:col-span-2">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/35">Detail image</p>
+                {exerciseForm.detailImageUrl ? (
+                  <div className="mb-2 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={exerciseForm.detailImageUrl} alt="Detail preview" className="h-32 w-full object-contain" />
+                  </div>
+                ) : (
+                  <div className="mb-2 flex h-24 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                    Pending detail upload
+                  </div>
+                )}
+                <p className="mb-2 text-[10px] text-white/35">
+                  Expected filename: {getExpectedExerciseImageNames({ id: exerciseForm.id || 'new-exercise', exerciseName: exerciseForm.exerciseName || 'exercise-name' }).detail}
+                </p>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={(event) => setDetailImageFile(event.target.files?.[0] ?? null)}
+                  aria-label="Upload detail image"
+                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-xs text-white file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-2 file:py-1 file:text-xs file:font-bold file:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.07] p-3 text-xs text-amber-200/90">
+              Images can be uploaded or replaced later. If left blank, users will see a professional placeholder with expected filename convention.
+            </div>
+
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setExerciseModalOpen(false)}
+                className="rounded-xl border border-white/[0.12] bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/65 transition hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveExercise}
+                disabled={exerciseSaving}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+              >
+                {exerciseSaving ? 'Saving...' : exerciseModalMode === 'create' ? 'Create Exercise' : 'Update Exercise'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -918,6 +1250,7 @@ function ProgramRow({
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && onRename(program.id)}
+                aria-label={`Edit name for ${program.name}`}
                 className="flex-1 bg-white/[0.06] border border-indigo-500/40 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
                 autoFocus
               />
@@ -1000,6 +1333,7 @@ function ProgramRow({
             <select
               value={selectedUserId}
               onChange={e => onSelectUser(e.target.value)}
+              aria-label={`Assign ${program.name} to user`}
               className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition"
             >
               <option value="">Choose a user</option>

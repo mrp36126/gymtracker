@@ -3,6 +3,7 @@ import path from 'path';
 import { parse } from 'csv-parse/sync';
 import { z } from 'zod';
 import type { ExerciseCatalogItem } from '@/types';
+import { prisma } from './prisma';
 
 const ExerciseCatalogRowSchema = z.object({
   id: z.string().min(2).max(50),
@@ -25,7 +26,7 @@ function splitMuscles(value: string) {
     .filter(Boolean);
 }
 
-export async function loadExerciseCatalog(): Promise<ExerciseCatalogItem[]> {
+async function loadCatalogFromCsv(): Promise<ExerciseCatalogItem[]> {
   const csvPath = path.join(process.cwd(), 'data', 'exercises.csv');
   const csvText = await readFile(csvPath, 'utf8');
 
@@ -58,4 +59,54 @@ export async function loadExerciseCatalog(): Promise<ExerciseCatalogItem[]> {
   }
 
   return items;
+}
+
+async function seedCatalogFromCsvIfNeeded() {
+  const existingCount = await prisma.exerciseCatalog.count();
+  if (existingCount > 0) return;
+
+  const csvItems = await loadCatalogFromCsv();
+  await prisma.exerciseCatalog.createMany({
+    data: csvItems.map((item) => ({
+      id: item.id,
+      exerciseName: item.exerciseName,
+      category: item.category,
+      primaryMuscles: item.primaryMuscles,
+      secondaryMuscles: item.secondaryMuscles,
+      equipment: item.equipment,
+      difficulty: item.difficulty,
+      description: item.description,
+      instructions: item.instructions,
+      imageUrl: item.imageUrl || null,
+      detailImageUrl: item.detailImageUrl || null,
+    })),
+    skipDuplicates: true,
+  });
+}
+
+export async function loadExerciseCatalog(): Promise<ExerciseCatalogItem[]> {
+  try {
+    await seedCatalogFromCsvIfNeeded();
+
+    const catalog = await prisma.exerciseCatalog.findMany({
+      orderBy: [{ exerciseName: 'asc' }, { id: 'asc' }],
+    });
+
+    return catalog.map((exercise) => ({
+      id: exercise.id,
+      exerciseName: exercise.exerciseName,
+      category: exercise.category,
+      primaryMuscles: exercise.primaryMuscles,
+      secondaryMuscles: exercise.secondaryMuscles,
+      equipment: exercise.equipment,
+      difficulty: exercise.difficulty,
+      description: exercise.description,
+      instructions: exercise.instructions,
+      imageUrl: exercise.imageUrl ?? '',
+      detailImageUrl: exercise.detailImageUrl ?? '',
+    }));
+  } catch {
+    // Fallback keeps the app running if migration has not yet been applied.
+    return loadCatalogFromCsv();
+  }
 }

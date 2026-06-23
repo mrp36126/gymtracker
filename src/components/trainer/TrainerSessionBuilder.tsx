@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ExerciseCatalogItem } from '@/types';
+import { getExpectedExerciseImageNames, hasPendingCardImage } from '@/lib/exercise-images';
 
 interface Props {
   targetUsers: { id: string; name: string }[];
@@ -143,6 +144,12 @@ export default function TrainerSessionBuilder({ targetUsers, todayName, exercise
               <div key={exercise.id} className="rounded-xl border border-white/[0.06] bg-black/10 p-3">
                 <p className="text-sm font-bold text-white">{exercise.exerciseName}</p>
                 <p className="text-[10px] uppercase tracking-widest text-white/30 mt-0.5">{exercise.category}</p>
+                {hasPendingCardImage(exercise) ? (
+                  <p className="mt-1 text-[10px] text-amber-300/80">Image pending upload: {getExpectedExerciseImageNames(exercise).card}</p>
+                ) : null}
+                {!exercise.detailImageUrl && (
+                  <p className="mt-1 text-[10px] text-amber-300/80">Detail image pending: {getExpectedExerciseImageNames(exercise).detail}</p>
+                )}
                 <button
                   type="button"
                   onClick={() => addExercise(exercise)}
