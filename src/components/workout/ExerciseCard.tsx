@@ -5,7 +5,6 @@ import SetLogger from './SetLogger';
 import ExerciseInstructionModal from './ExerciseInstructionModal';
 import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
 
-interface Props { exercise: Exercise; }
 interface Props {
   exercise: Exercise;
   readOnly?: boolean;

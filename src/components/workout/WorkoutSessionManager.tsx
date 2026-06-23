@@ -20,10 +20,10 @@ interface Props {
 export default function WorkoutSessionManager({
   day,
   programId,
-  program,
+  _program,
   targetUserId,
-  targetUserName,
-  user,
+  _targetUserName,
+  _user,
   initialExercises,
   readOnly,
   isTrainingForSomeone,
@@ -33,7 +33,7 @@ export default function WorkoutSessionManager({
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [addQuery, setAddQuery] = useState('');
   const [allExercises, setAllExercises] = useState<ExerciseCatalogItem[]>([]);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [_deleting, setDeleting] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
