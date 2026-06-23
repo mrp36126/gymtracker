@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 const SetSchema = z.object({
   exerciseId: z.string().cuid(),
+  exerciseName: z.string().min(1).max(120).optional(),
   setNumber:  z.number().int().positive(),
   weight:     z.number().nonnegative().optional(),
   reps:       z.number().int().positive().optional(),
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const exercise = targetUser.isTrainerUser
+  let exercise = targetUser.isTrainerUser
     ? await prisma.exercise.findFirst({
         where: {
           id: body.exerciseId,
@@ -100,8 +101,20 @@ export async function POST(req: NextRequest) {
       })
     : await findExerciseForUser(body.exerciseId, targetUserId);
 
+  // If the client holds a stale exercise id (for example after session recreation),
+  // recover by matching the current active program exercise by name.
+  if (!exercise && activePrimaryProgram && body.exerciseName?.trim()) {
+    exercise = await prisma.exercise.findFirst({
+      where: {
+        programId: activePrimaryProgram.id,
+        name: body.exerciseName.trim(),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   if (!exercise) {
-    return NextResponse.json({ error: 'Exercise not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Exercise not found. Please reload this workout session.' }, { status: 404 });
   }
 
   const logMode = getLogMode(exercise.muscleGroup, exercise.name);
@@ -135,7 +148,7 @@ export async function POST(req: NextRequest) {
       distanceKm: logMode === 'timeDistance' || logMode === 'weightDistance' ? body.distanceKm : null,
       notes:      `Set ${body.setNumber}`,
       userId:     targetUserId,
-      exerciseId: body.exerciseId,
+      exerciseId: exercise.id,
     },
   });
 

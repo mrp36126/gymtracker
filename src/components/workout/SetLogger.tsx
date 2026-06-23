@@ -141,6 +141,7 @@ export default function SetLogger({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           exerciseId,
+          exerciseName,
           setNumber: setRow.setNumber,
           ...(targetUserId ? { targetUserId } : {}),
           ...(hasWeight ? { weight: parseFloat(setRow.weight) } : {}),
