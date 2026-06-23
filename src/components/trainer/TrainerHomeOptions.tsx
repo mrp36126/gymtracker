@@ -70,6 +70,14 @@ export default function TrainerHomeOptions({ assignedUsers }: Props) {
           </div>
         </Link>
 
+        <Link href="/progress" className="block">
+          <div className="relative h-full rounded-2xl border border-purple-500/20 bg-purple-500/[0.06] p-5 transition hover:border-purple-400/40 hover:bg-purple-500/[0.1]">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-purple-300/70">My Progress</p>
+            <p className="text-xl font-extrabold tracking-tight text-white">View your progress charts</p>
+            <p className="mt-2 text-sm leading-6 text-white/45">See your own performance trends, personal records, and workout history.</p>
+          </div>
+        </Link>
+
         <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.06] p-5 md:col-span-2 xl:col-span-1">
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-indigo-300/70">Select Who To Train Today</p>
           <p className="text-xl font-extrabold tracking-tight text-white">Pick a trainee and start logging</p>
