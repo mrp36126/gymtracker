@@ -83,7 +83,7 @@ function formatLastCapturedLog(lastLog: WorkoutLog) {
   return `${lastLog.weight} kg · ${lastLog.sets} sets × ${lastLog.reps} reps`;
 }
 
-export default function ExerciseCard({ exercise, readOnly = false, targetUserId }: Props) {
+export default function ExerciseCard({ exercise, readOnly = false, targetUserId, onDelete }: Props) {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(exercise.lastLog ?? null);
   const [completedSets, setCompletedSets] = useState(0);
   const [guideOpen, setGuideOpen] = useState(false);

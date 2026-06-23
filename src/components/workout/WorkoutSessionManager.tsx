@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useState, useEffect } from 'react';
 import type { Exercise, ExerciseCatalogItem } from '@/types';
@@ -20,10 +21,10 @@ interface Props {
 export default function WorkoutSessionManager({
   day,
   programId,
-  _program,
+  program,
   targetUserId,
-  _targetUserName,
-  _user,
+  targetUserName,
+  user,
   initialExercises,
   readOnly,
   isTrainingForSomeone,
@@ -33,7 +34,7 @@ export default function WorkoutSessionManager({
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [addQuery, setAddQuery] = useState('');
   const [allExercises, setAllExercises] = useState<ExerciseCatalogItem[]>([]);
-  const [_deleting, setDeleting] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
