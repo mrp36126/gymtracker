@@ -78,6 +78,14 @@ export default function TrainerHomeOptions({ assignedUsers }: Props) {
           </div>
         </Link>
 
+        <Link href="/bmi" className="block">
+          <div className="relative h-full rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.06] p-5 transition hover:border-cyan-400/40 hover:bg-cyan-500/[0.1]">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-cyan-300/70">BMI</p>
+            <p className="text-xl font-extrabold tracking-tight text-white">Capture weight and height</p>
+            <p className="mt-2 text-sm leading-6 text-white/45">Track your body mass index from your latest entered values.</p>
+          </div>
+        </Link>
+
         <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.06] p-5 md:col-span-2 xl:col-span-1">
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-indigo-300/70">Select Who To Train Today</p>
           <p className="text-xl font-extrabold tracking-tight text-white">Pick a trainee and start logging</p>

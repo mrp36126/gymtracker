@@ -241,11 +241,17 @@ export default async function WelcomePage() {
 
         {user.isAdmin ? (
           <>
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-3 mb-4 md:grid-cols-4">
               <Link href="/progress" className="block">
                 <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
                   <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
                   <p className="text-lg font-extrabold text-white">Charts</p>
+                </div>
+              </Link>
+              <Link href="/bmi" className="block">
+                <div className="bg-white/[0.04] border border-cyan-500/20 rounded-2xl p-5 hover:border-cyan-500/40 transition">
+                  <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Health</p>
+                  <p className="text-lg font-extrabold text-white">BMI</p>
                 </div>
               </Link>
               <Link href="/program" className="block">
@@ -273,11 +279,17 @@ export default async function WelcomePage() {
             </Link>
           </>
         ) : user.isTrainer ? (
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-2 gap-3 mb-4 md:grid-cols-3">
             <Link href="/welcome" className="block">
               <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
                 <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Dashboard</p>
                 <p className="text-lg font-extrabold text-white">Home</p>
+              </div>
+            </Link>
+            <Link href="/bmi" className="block">
+              <div className="bg-white/[0.04] border border-cyan-500/20 rounded-2xl p-5 hover:border-cyan-500/40 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Health</p>
+                <p className="text-lg font-extrabold text-white">BMI</p>
               </div>
             </Link>
             <Link href="/admin" className="block">
@@ -326,7 +338,7 @@ export default async function WelcomePage() {
             </Link>
           </div>
         ) : user.isTrainerUser ? (
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-2 gap-3 mb-4 md:grid-cols-3">
             <Link href={activeProgram ? '/workout/' + todayName.toLowerCase() : '/welcome'} className="block">
               <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
                 <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Today&apos;s Workout</p>
@@ -347,6 +359,12 @@ export default async function WelcomePage() {
                 <p className="text-lg font-extrabold text-white">Progress Charts</p>
               </div>
             </Link>
+            <Link href="/bmi" className="block">
+              <div className="bg-white/[0.04] border border-cyan-500/20 rounded-2xl p-5 hover:border-cyan-500/40 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Health</p>
+                <p className="text-lg font-extrabold text-white">BMI</p>
+              </div>
+            </Link>
             <Link href="/leaderboard" className="block">
               <div className="bg-white/[0.04] border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition">
                 <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Overall Leaderboard</p>
@@ -355,11 +373,17 @@ export default async function WelcomePage() {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-3 mb-4 grid-cols-2">
+          <div className="grid gap-3 mb-4 grid-cols-2 md:grid-cols-3">
             <Link href="/progress" className="block">
               <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 hover:border-white/10 transition">
                 <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Progress</p>
                 <p className="text-lg font-extrabold text-white">Charts</p>
+              </div>
+            </Link>
+            <Link href="/bmi" className="block">
+              <div className="bg-white/[0.04] border border-cyan-500/20 rounded-2xl p-5 hover:border-cyan-500/40 transition">
+                <p className="text-xs font-semibold tracking-widest text-white/30 uppercase mb-2">Health</p>
+                <p className="text-lg font-extrabold text-white">BMI</p>
               </div>
             </Link>
             <Link href="/leaderboard" className="block">
