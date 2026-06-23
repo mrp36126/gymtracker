@@ -66,7 +66,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  if (targetUser.isTrainerUser) {
+  const isSelfCapture = targetUser.id === user!.id;
+  if (targetUser.isTrainerUser && isSelfCapture) {
     return NextResponse.json({ error: 'Trainer users are read-only' }, { status: 403 });
   }
 

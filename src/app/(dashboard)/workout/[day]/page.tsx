@@ -52,6 +52,7 @@ export default async function WorkoutDayPage({
 
   const targetUserId = targetUser.id;
   const targetUserName = targetUserId === user.id ? user.name : targetUser.name ?? 'Selected user';
+  const viewerCanCaptureForTarget = isTrainer(user) || isAdmin(user) || targetUserId === user.id;
 
   const startOfToday = getStartOfTodayInSAST();
 
@@ -168,7 +169,7 @@ export default async function WorkoutDayPage({
         targetUserName={targetUserName}
         user={user}
         initialExercises={exercisesWithLogs}
-        readOnly={Boolean(targetUser.isTrainerUser)}
+        readOnly={Boolean(targetUser.isTrainerUser && !viewerCanCaptureForTarget)}
         isTrainingForSomeone={targetUserId !== user.id}
       />
     </main>

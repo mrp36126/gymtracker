@@ -47,7 +47,7 @@ describe('workout sets route', () => {
     prismaMock.workoutLog.create.mockResolvedValue({ id: 'log-1' });
   });
 
-  it('blocks logging a set when the target user is a trainer user', async () => {
+  it('allows logging a set when the target user is a trainer user assigned to the trainer', async () => {
     prismaMock.user.findUnique.mockResolvedValueOnce({
       id: 'cmcuid000000000000000099',
       trainerId: 'trainer-1',
@@ -68,8 +68,10 @@ describe('workout sets route', () => {
       headers: { 'Content-Type': 'application/json' },
     }));
 
-    expect(response.status).toBe(403);
-    expect(prismaMock.workoutLog.create).not.toHaveBeenCalled();
+    expect(response.status).toBe(201);
+    expect(prismaMock.workoutLog.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ userId: 'cmcuid000000000000000099' }),
+    }));
   });
 
   it('allows logging a set when the target user is an individual user', async () => {
