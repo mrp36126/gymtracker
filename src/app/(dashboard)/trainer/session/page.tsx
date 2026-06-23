@@ -7,15 +7,35 @@ import { resolveManagedTargetUser } from '@/lib/trainer-context';
 import { isAdmin, isTrainer } from '@/lib/rbac';
 import TrainerSessionBuilder from '@/components/trainer/TrainerSessionBuilder';
 
-export default async function TrainerSessionPage({ searchParams }: { searchParams?: Promise<{ userId?: string }> }) {
+function parseTargetIds(userIds?: string, userId?: string) {
+  const explicitIds = (userIds ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (explicitIds.length > 0) {
+    return Array.from(new Set(explicitIds));
+  }
+
+  return userId ? [userId] : [];
+}
+
+export default async function TrainerSessionPage({ searchParams }: { searchParams?: Promise<{ userId?: string; userIds?: string }> }) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
   if (!isTrainer(user) && !isAdmin(user)) redirect('/welcome');
 
   const params = searchParams ? await searchParams : {};
-  const targetUser = await resolveManagedTargetUser(user, params.userId);
+  const requestedIds = parseTargetIds(params.userIds, params.userId);
 
-  if (!targetUser || !targetUser.isTrainerUser) {
+  if (requestedIds.length === 0) {
+    redirect('/welcome');
+  }
+
+  const resolvedTargets = await Promise.all(requestedIds.map((id) => resolveManagedTargetUser(user, id)));
+  const targetUsers = resolvedTargets.filter((target): target is NonNullable<typeof target> => Boolean(target && target.isTrainerUser));
+
+  if (targetUsers.length === 0) {
     redirect('/welcome');
   }
 
@@ -32,8 +52,7 @@ export default async function TrainerSessionPage({ searchParams }: { searchParam
 
       <div className="max-w-6xl mx-auto px-4 pt-6 w-full">
         <TrainerSessionBuilder
-          targetUserId={targetUser.id}
-          targetUserName={targetUser.name ?? 'Trainer User'}
+          targetUsers={targetUsers.map((target) => ({ id: target.id, name: target.name ?? 'Trainer User' }))}
           todayName={todayName}
           exercises={exercises}
         />

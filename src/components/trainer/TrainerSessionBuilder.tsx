@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { ExerciseCatalogItem } from '@/types';
 
 interface Props {
-  targetUserId: string;
-  targetUserName: string;
+  targetUsers: { id: string; name: string }[];
   todayName: string;
   exercises: ExerciseCatalogItem[];
 }
@@ -21,12 +20,16 @@ type SelectedExercise = {
   notes: string;
 };
 
-export default function TrainerSessionBuilder({ targetUserId, targetUserName, todayName, exercises }: Props) {
+export default function TrainerSessionBuilder({ targetUsers, todayName, exercises }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<SelectedExercise[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const targetUserLabel = targetUsers.length === 1
+    ? targetUsers[0]?.name ?? 'Trainer User'
+    : `${targetUsers.length} Trainees`;
 
   const filteredExercises = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -84,7 +87,7 @@ export default function TrainerSessionBuilder({ targetUserId, targetUserName, to
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          targetUserId,
+          targetUserIds: targetUsers.map((target) => target.id),
           exercises: selected.map((exercise) => ({
             exerciseId: exercise.exerciseId,
             sets: Number(exercise.sets),
@@ -97,7 +100,9 @@ export default function TrainerSessionBuilder({ targetUserId, targetUserName, to
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || 'Unable to load training session');
 
-      router.push(`/workout/${todayName.toLowerCase()}?userId=${targetUserId}`);
+      const userIdsQuery = targetUsers.map((target) => target.id).join(',');
+      const defaultUserId = targetUsers[0]?.id;
+      router.push(`/workout/${todayName.toLowerCase()}?userId=${defaultUserId}&userIds=${encodeURIComponent(userIdsQuery)}`);
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Unable to load training session');
@@ -110,7 +115,10 @@ export default function TrainerSessionBuilder({ targetUserId, targetUserName, to
     <div className="space-y-5">
       <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.06] p-5">
         <p className="text-xs font-semibold tracking-widest text-indigo-300/70 uppercase mb-2">Select Exercises To Load</p>
-        <p className="text-xl font-extrabold tracking-tight text-white">{targetUserName} · {todayName}</p>
+        <p className="text-xl font-extrabold tracking-tight text-white">{targetUserLabel} · {todayName}</p>
+        {targetUsers.length > 1 && (
+          <p className="mt-2 text-xs text-white/40">{targetUsers.map((target) => target.name).join(', ')}</p>
+        )}
         <p className="mt-2 text-sm text-white/45">No pre-loaded program is used. Build this session exercise-by-exercise, then start logging sets and reps.</p>
       </div>
 
@@ -206,7 +214,7 @@ export default function TrainerSessionBuilder({ targetUserId, targetUserName, to
             disabled={loading || selected.length === 0}
             className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
           >
-            {loading ? 'Loading session...' : `Load Exercises For ${targetUserName}`}
+            {loading ? 'Loading session...' : `Load Exercises For ${targetUserLabel}`}
           </button>
         </div>
       </div>

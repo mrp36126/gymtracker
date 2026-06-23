@@ -10,12 +10,21 @@ import { isAdmin, isTrainer } from '@/lib/rbac';
 import { resolveManagedTargetUser } from '@/lib/trainer-context';
 import WorkoutSessionManager from '@/components/workout/WorkoutSessionManager';
 
+function parseUserIdsQuery(userIds?: string) {
+  return Array.from(new Set(
+    (userIds ?? '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean),
+  ));
+}
+
 export default async function WorkoutDayPage({
   params,
   searchParams,
 }: {
   params: Promise<{ day: string }>;
-  searchParams?: Promise<{ userId?: string }>;
+  searchParams?: Promise<{ userId?: string; userIds?: string }>;
 }) {
   const user = await getAuthUser();
   if (!user) redirect('/login');
@@ -23,7 +32,19 @@ export default async function WorkoutDayPage({
   const { day: rawDay } = await params;
   const query = searchParams ? await searchParams : {};
   const day = rawDay.charAt(0).toUpperCase() + rawDay.slice(1);
-  const targetUser = await resolveManagedTargetUser(user, query.userId);
+  const requestedUserIds = parseUserIdsQuery(query.userIds);
+
+  const toggleTargets = (isTrainer(user) || isAdmin(user)) && requestedUserIds.length > 0
+    ? (await Promise.all(requestedUserIds.map((id) => resolveManagedTargetUser(user, id))))
+      .filter((target): target is NonNullable<typeof target> => Boolean(target && target.isTrainerUser))
+    : [];
+
+  const defaultTargetUserId = toggleTargets[0]?.id;
+  const requestedSingleUserId = query.userId && toggleTargets.some((target) => target.id === query.userId)
+    ? query.userId
+    : query.userId ?? defaultTargetUserId;
+
+  const targetUser = await resolveManagedTargetUser(user, requestedSingleUserId);
 
   if (!targetUser) {
     redirect('/welcome');
@@ -49,12 +70,13 @@ export default async function WorkoutDayPage({
 
   if (!program) {
     if (!isAdmin(user) && !isTrainer(user)) redirect('/welcome');
+    const userIdsQuery = toggleTargets.map((target) => target.id).join(',');
     return (
       <main className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6">
         <div className="text-center">
           <p className="text-white/40">No active session found.</p>
           {isTrainer(user) && targetUserId !== user.id && (
-            <Link href={`/trainer/session?userId=${targetUserId}`} className="text-indigo-400 text-sm mt-2 inline-block">Load exercises for this session</Link>
+            <Link href={`/trainer/session?userIds=${encodeURIComponent(userIdsQuery || targetUserId)}`} className="text-indigo-400 text-sm mt-2 inline-block">Load exercises for this session</Link>
           )}
           <Link href="/welcome" className="text-indigo-400 text-sm mt-2 inline-block">← Home</Link>
         </div>
@@ -109,6 +131,34 @@ export default async function WorkoutDayPage({
           <div className="hidden text-xs text-white/30 sm:block">{exercisesWithLogs.length} exercises</div>
         </div>
       </div>
+
+      {toggleTargets.length > 1 && (
+        <div className="mx-auto w-full max-w-lg px-4 pt-4">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-white/35">Trainee Toggle</p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {toggleTargets.map((target) => {
+                const isActive = target.id === targetUserId;
+                const userIdsQuery = toggleTargets.map((entry) => entry.id).join(',');
+                const displayName = target.name ?? 'Trainer User';
+                return (
+                  <Link
+                    key={target.id}
+                    href={`/workout/${rawDay}?userId=${target.id}&userIds=${encodeURIComponent(userIdsQuery)}`}
+                    className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                      isActive
+                        ? 'border-indigo-400/60 bg-indigo-500/25 text-white'
+                        : 'border-white/[0.08] bg-white/[0.05] text-white/60 hover:border-indigo-400/30 hover:text-white/80'
+                    }`}
+                  >
+                    {displayName}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <WorkoutSessionManager
         day={day}

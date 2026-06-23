@@ -16,8 +16,12 @@ const SelectedSessionExerciseSchema = z.object({
 });
 
 const TrainerSessionSchema = z.object({
-  targetUserId: z.string().cuid(),
+  targetUserId: z.string().cuid().optional(),
+  targetUserIds: z.array(z.string().cuid()).min(1).optional(),
   exercises: z.array(SelectedSessionExerciseSchema).min(1, 'Choose at least one exercise'),
+}).refine((payload) => Boolean(payload.targetUserId) || Boolean(payload.targetUserIds && payload.targetUserIds.length > 0), {
+  message: 'Provide at least one trainer user',
+  path: ['targetUserIds'],
 });
 
 function sessionDateKey(date: Date) {
@@ -42,9 +46,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const targetUser = await resolveManagedTargetUser(user!, parsedBody.targetUserId);
-  if (!targetUser || !targetUser.isTrainerUser) {
-    return NextResponse.json({ error: 'Trainer user not found or not assigned to you' }, { status: 403 });
+  const requestedTargetIds = parsedBody.targetUserIds && parsedBody.targetUserIds.length > 0
+    ? Array.from(new Set(parsedBody.targetUserIds))
+    : parsedBody.targetUserId
+      ? [parsedBody.targetUserId]
+      : [];
+
+  const resolvedTargets = await Promise.all(
+    requestedTargetIds.map((targetId) => resolveManagedTargetUser(user!, targetId)),
+  );
+
+  const targetUsers = resolvedTargets.filter((target): target is NonNullable<typeof target> => Boolean(target && target.isTrainerUser));
+  if (targetUsers.length !== requestedTargetIds.length || targetUsers.length === 0) {
+    return NextResponse.json({ error: 'One or more trainer users were not found or are not assigned to you' }, { status: 403 });
   }
 
   let catalog;
@@ -68,52 +82,70 @@ export async function POST(req: NextRequest) {
   const todayName = getTodayName();
   const name = `Trainer Session · ${sessionDateKey(now)}`;
 
-  const sessionProgram = await prisma.$transaction(async (tx) => {
-    await tx.program.updateMany({
-      where: {
-        userId: targetUser.id,
-        programType: 'primary',
-        isActive: true,
-      },
-      data: { isActive: false },
-    });
+  const sessionPrograms = await prisma.$transaction(async (tx) => {
+    const createdPrograms: { id: string; userId: string; exerciseCount: number }[] = [];
 
-    await tx.program.deleteMany({
-      where: {
-        userId: targetUser.id,
-        programType: 'primary',
-        name: { startsWith: 'Trainer Session · ' },
-        createdAt: { gte: startOfToday },
-      },
-    });
-
-    return tx.program.create({
-      data: {
-        name,
-        description: `Loaded by trainer for ${todayName}`,
-        programType: 'primary',
-        isActive: true,
-        userId: targetUser.id,
-        exercises: {
-          create: parsedBody.exercises.map((selectedExercise, index) => {
-            const catalogExercise = catalogById.get(selectedExercise.exerciseId)!;
-            return {
-              name: catalogExercise.exerciseName,
-              muscleGroup: catalogExercise.category,
-              day: todayName,
-              order: index + 1,
-              defaultSets: selectedExercise.sets,
-              defaultReps: selectedExercise.reps,
-              notes: selectedExercise.notes || catalogExercise.instructions,
-              mediaUrl: catalogExercise.imageUrl || null,
-              detailImageUrl: catalogExercise.detailImageUrl || null,
-            };
-          }),
+    for (const targetUser of targetUsers) {
+      await tx.program.updateMany({
+        where: {
+          userId: targetUser.id,
+          programType: 'primary',
+          isActive: true,
         },
-      },
-      include: { _count: { select: { exercises: true } } },
-    });
+        data: { isActive: false },
+      });
+
+      await tx.program.deleteMany({
+        where: {
+          userId: targetUser.id,
+          programType: 'primary',
+          name: { startsWith: 'Trainer Session · ' },
+          createdAt: { gte: startOfToday },
+        },
+      });
+
+      const created = await tx.program.create({
+        data: {
+          name,
+          description: `Loaded by trainer for ${todayName}`,
+          programType: 'primary',
+          isActive: true,
+          userId: targetUser.id,
+          exercises: {
+            create: parsedBody.exercises.map((selectedExercise, index) => {
+              const catalogExercise = catalogById.get(selectedExercise.exerciseId)!;
+              return {
+                name: catalogExercise.exerciseName,
+                muscleGroup: catalogExercise.category,
+                day: todayName,
+                order: index + 1,
+                defaultSets: selectedExercise.sets,
+                defaultReps: selectedExercise.reps,
+                notes: selectedExercise.notes || catalogExercise.instructions,
+                mediaUrl: catalogExercise.imageUrl || null,
+                detailImageUrl: catalogExercise.detailImageUrl || null,
+              };
+            }),
+          },
+        },
+        include: { _count: { select: { exercises: true } } },
+      });
+
+      createdPrograms.push({
+        id: created.id,
+        userId: targetUser.id,
+        exerciseCount: created._count.exercises,
+      });
+    }
+
+    return createdPrograms;
   });
 
-  return NextResponse.json({ data: { programId: sessionProgram.id, exercises: sessionProgram._count.exercises, day: todayName } }, { status: 201 });
+  return NextResponse.json({
+    data: {
+      day: todayName,
+      targets: sessionPrograms,
+      exercisesPerTarget: sessionPrograms[0]?.exerciseCount ?? 0,
+    },
+  }, { status: 201 });
 }
