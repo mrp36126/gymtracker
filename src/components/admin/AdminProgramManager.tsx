@@ -89,6 +89,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
   const [exerciseSaving, setExerciseSaving] = useState(false);
   const [cardImageFile, setCardImageFile] = useState<File | null>(null);
   const [detailImageFile, setDetailImageFile] = useState<File | null>(null);
+  const [exerciseFieldErrors, setExerciseFieldErrors] = useState<Record<string, string>>({});
   const [exerciseDeletingId, setExerciseDeletingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -247,6 +248,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
     });
     setCardImageFile(null);
     setDetailImageFile(null);
+    setExerciseFieldErrors({});
     setEditingExerciseId(null);
   };
 
@@ -272,13 +274,70 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
       imageUrl: exercise.imageUrl || '',
       detailImageUrl: exercise.detailImageUrl || '',
     });
+    setExerciseFieldErrors({});
     setExerciseModalOpen(true);
+  };
+
+  const setExerciseValue = (field: keyof typeof exerciseForm, value: string) => {
+    setExerciseForm((prev) => ({ ...prev, [field]: value }));
+    setExerciseFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
 
   const parseMuscles = (value: string) => value
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+
+  const validateExerciseForm = () => {
+    const nextErrors: Record<string, string> = {};
+
+    if (exerciseModalMode === 'create' && exerciseForm.id.trim()) {
+      const idValue = exerciseForm.id.trim();
+      if (!/^[A-Za-z0-9-_]{2,50}$/.test(idValue)) {
+        nextErrors.id = 'ID must be 2-50 chars using letters, numbers, hyphen, or underscore.';
+      }
+    }
+
+    if (exerciseForm.exerciseName.trim().length < 2) {
+      nextErrors.exerciseName = 'Exercise name must be at least 2 characters.';
+    }
+    if (exerciseForm.category.trim().length < 2) {
+      nextErrors.category = 'Category is required.';
+    }
+    if (parseMuscles(exerciseForm.primaryMuscles).length === 0) {
+      nextErrors.primaryMuscles = 'Enter at least one primary muscle.';
+    }
+    if (exerciseForm.equipment.trim().length < 2) {
+      nextErrors.equipment = 'Equipment is required.';
+    }
+    if (exerciseForm.difficulty.trim().length < 2) {
+      nextErrors.difficulty = 'Difficulty is required.';
+    }
+    if (exerciseForm.description.trim().length < 2) {
+      nextErrors.description = 'Description is required.';
+    }
+    if (exerciseForm.instructions.trim().length < 2) {
+      nextErrors.instructions = 'Instructions are required.';
+    }
+
+    setExerciseFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const parseJsonSafely = async (response: Response) => {
+    const text = await response.text();
+    if (!text) return {} as any;
+    try {
+      return JSON.parse(text) as any;
+    } catch {
+      return { error: text } as any;
+    }
+  };
 
   const uploadExerciseImage = async (exerciseId: string, file: File, mediaKind: 'card' | 'detail') => {
     const formData = new FormData();
@@ -289,7 +348,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
       method: 'POST',
       body: formData,
     });
-    const json = await response.json();
+    const json = await parseJsonSafely(response);
     if (!response.ok) {
       throw new Error(json.error || `Failed to upload ${mediaKind} image`);
     }
@@ -298,8 +357,11 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
   };
 
   const handleSaveExercise = async () => {
-    setExerciseSaving(true);
     setError('');
+    if (!validateExerciseForm()) {
+      return;
+    }
+    setExerciseSaving(true);
     try {
       const payload = {
         exerciseName: exerciseForm.exerciseName.trim(),
@@ -326,7 +388,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const json = await response.json();
+      const json = await parseJsonSafely(response);
       if (!response.ok) throw new Error(json.error || 'Failed to save exercise');
 
       const normalizedExercise: ExerciseCatalogItem = {
@@ -384,7 +446,7 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
     setError('');
     try {
       const response = await fetch(`/api/exercises/${exercise.id}`, { method: 'DELETE' });
-      const json = await response.json();
+      const json = await parseJsonSafely(response);
       if (!response.ok) throw new Error(json.error || 'Failed to delete exercise');
 
       setCatalog((current) => current.filter((item) => item.id !== exercise.id));
@@ -1128,16 +1190,40 @@ export default function AdminProgramManager({ programs: initial, users, waitingU
 
             <div className="grid gap-3 sm:grid-cols-2">
               {exerciseModalMode === 'create' && (
-                <input value={exerciseForm.id} onChange={(event) => setExerciseForm((prev) => ({ ...prev, id: event.target.value }))} placeholder="Exercise ID (optional, e.g. bench-press)" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
+                <div className="sm:col-span-2">
+                  <input value={exerciseForm.id} onChange={(event) => setExerciseValue('id', event.target.value)} placeholder="Exercise ID (optional, e.g. bench-press)" className={`w-full rounded-xl border bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none transition ${exerciseFieldErrors.id ? 'border-red-500/60 focus:border-red-400/70' : 'border-white/[0.08] focus:border-indigo-500/50'}`} />
+                  {exerciseFieldErrors.id && <p className="mt-1 text-xs text-red-300">{exerciseFieldErrors.id}</p>}
+                </div>
               )}
-              <input value={exerciseForm.exerciseName} onChange={(event) => setExerciseForm((prev) => ({ ...prev, exerciseName: event.target.value }))} placeholder="Exercise name" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50" />
-              <input value={exerciseForm.category} onChange={(event) => setExerciseForm((prev) => ({ ...prev, category: event.target.value }))} placeholder="Category" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50" />
-              <input value={exerciseForm.equipment} onChange={(event) => setExerciseForm((prev) => ({ ...prev, equipment: event.target.value }))} placeholder="Equipment" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50" />
-              <input value={exerciseForm.difficulty} onChange={(event) => setExerciseForm((prev) => ({ ...prev, difficulty: event.target.value }))} placeholder="Difficulty" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50" />
-              <input value={exerciseForm.primaryMuscles} onChange={(event) => setExerciseForm((prev) => ({ ...prev, primaryMuscles: event.target.value }))} placeholder="Primary muscles (comma separated)" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
-              <input value={exerciseForm.secondaryMuscles} onChange={(event) => setExerciseForm((prev) => ({ ...prev, secondaryMuscles: event.target.value }))} placeholder="Secondary muscles (comma separated)" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
-              <textarea value={exerciseForm.description} onChange={(event) => setExerciseForm((prev) => ({ ...prev, description: event.target.value }))} rows={3} placeholder="Description" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
-              <textarea value={exerciseForm.instructions} onChange={(event) => setExerciseForm((prev) => ({ ...prev, instructions: event.target.value }))} rows={4} placeholder="Instructions" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
+              <div>
+                <input value={exerciseForm.exerciseName} onChange={(event) => setExerciseValue('exerciseName', event.target.value)} placeholder="Exercise name" className={`w-full rounded-xl border bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none transition ${exerciseFieldErrors.exerciseName ? 'border-red-500/60 focus:border-red-400/70' : 'border-white/[0.08] focus:border-indigo-500/50'}`} />
+                {exerciseFieldErrors.exerciseName && <p className="mt-1 text-xs text-red-300">{exerciseFieldErrors.exerciseName}</p>}
+              </div>
+              <div>
+                <input value={exerciseForm.category} onChange={(event) => setExerciseValue('category', event.target.value)} placeholder="Category" className={`w-full rounded-xl border bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none transition ${exerciseFieldErrors.category ? 'border-red-500/60 focus:border-red-400/70' : 'border-white/[0.08] focus:border-indigo-500/50'}`} />
+                {exerciseFieldErrors.category && <p className="mt-1 text-xs text-red-300">{exerciseFieldErrors.category}</p>}
+              </div>
+              <div>
+                <input value={exerciseForm.equipment} onChange={(event) => setExerciseValue('equipment', event.target.value)} placeholder="Equipment" className={`w-full rounded-xl border bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none transition ${exerciseFieldErrors.equipment ? 'border-red-500/60 focus:border-red-400/70' : 'border-white/[0.08] focus:border-indigo-500/50'}`} />
+                {exerciseFieldErrors.equipment && <p className="mt-1 text-xs text-red-300">{exerciseFieldErrors.equipment}</p>}
+              </div>
+              <div>
+                <input value={exerciseForm.difficulty} onChange={(event) => setExerciseValue('difficulty', event.target.value)} placeholder="Difficulty" className={`w-full rounded-xl border bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none transition ${exerciseFieldErrors.difficulty ? 'border-red-500/60 focus:border-red-400/70' : 'border-white/[0.08] focus:border-indigo-500/50'}`} />
+                {exerciseFieldErrors.difficulty && <p className="mt-1 text-xs text-red-300">{exerciseFieldErrors.difficulty}</p>}
+              </div>
+              <div className="sm:col-span-2">
+                <input value={exerciseForm.primaryMuscles} onChange={(event) => setExerciseValue('primaryMuscles', event.target.value)} placeholder="Primary muscles (comma separated)" className={`w-full rounded-xl border bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none transition ${exerciseFieldErrors.primaryMuscles ? 'border-red-500/60 focus:border-red-400/70' : 'border-white/[0.08] focus:border-indigo-500/50'}`} />
+                {exerciseFieldErrors.primaryMuscles && <p className="mt-1 text-xs text-red-300">{exerciseFieldErrors.primaryMuscles}</p>}
+              </div>
+              <input value={exerciseForm.secondaryMuscles} onChange={(event) => setExerciseValue('secondaryMuscles', event.target.value)} placeholder="Secondary muscles (comma separated)" className="rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 sm:col-span-2" />
+              <div className="sm:col-span-2">
+                <textarea value={exerciseForm.description} onChange={(event) => setExerciseValue('description', event.target.value)} rows={3} placeholder="Description" className={`w-full rounded-xl border bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none transition ${exerciseFieldErrors.description ? 'border-red-500/60 focus:border-red-400/70' : 'border-white/[0.08] focus:border-indigo-500/50'}`} />
+                {exerciseFieldErrors.description && <p className="mt-1 text-xs text-red-300">{exerciseFieldErrors.description}</p>}
+              </div>
+              <div className="sm:col-span-2">
+                <textarea value={exerciseForm.instructions} onChange={(event) => setExerciseValue('instructions', event.target.value)} rows={4} placeholder="Instructions" className={`w-full rounded-xl border bg-white/[0.06] px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none transition ${exerciseFieldErrors.instructions ? 'border-red-500/60 focus:border-red-400/70' : 'border-white/[0.08] focus:border-indigo-500/50'}`} />
+                {exerciseFieldErrors.instructions && <p className="mt-1 text-xs text-red-300">{exerciseFieldErrors.instructions}</p>}
+              </div>
               <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 sm:col-span-2">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/35">Card image</p>
                 {exerciseForm.imageUrl ? (

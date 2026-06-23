@@ -52,16 +52,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { id: requestedId, ...rest } = payload;
+  try {
+    const { id: requestedId, ...rest } = payload;
 
-  const created = await prisma.exerciseCatalog.create({
-    data: {
-      id: requestedId?.trim() || crypto.randomUUID(),
-      ...rest,
-      imageUrl: rest.imageUrl || null,
-      detailImageUrl: rest.detailImageUrl || null,
-    },
-  });
+    const created = await prisma.exerciseCatalog.create({
+      data: {
+        id: requestedId?.trim() || crypto.randomUUID(),
+        ...rest,
+        imageUrl: rest.imageUrl || null,
+        detailImageUrl: rest.detailImageUrl || null,
+      },
+    });
 
-  return NextResponse.json({ data: created }, { status: 201 });
+    return NextResponse.json({ data: created }, { status: 201 });
+  } catch (err: any) {
+    const message = typeof err?.message === 'string' && err.message.length > 0
+      ? err.message
+      : 'Failed to create exercise';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
