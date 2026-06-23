@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import type { Exercise, ExerciseCatalogItem } from '@/types';
 import { useRouter } from 'next/navigation';
 import ExerciseCard from './ExerciseCard';
+import { getWorkoutExerciseCardKey } from '@/lib/workout-session-keys';
 
 interface Props {
   day: string;
@@ -36,6 +37,11 @@ export default function WorkoutSessionManager({
   const [allExercises, setAllExercises] = useState<ExerciseCatalogItem[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    // Keep local exercise state aligned with the active trainee context.
+    setExercises(initialExercises);
+  }, [initialExercises, targetUserId, day, programId]);
 
   useEffect(() => {
     const loadExercises = async () => {
@@ -137,7 +143,7 @@ export default function WorkoutSessionManager({
     <>
       <div className="w-full max-w-lg mx-auto px-4 pt-5 overflow-hidden pb-8">
         {exercises.map((ex, i) => (
-          <div key={ex.id}>
+          <div key={getWorkoutExerciseCardKey(targetUserId, ex.id)}>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
                 {i + 1}

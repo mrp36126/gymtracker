@@ -9,6 +9,7 @@ import WorkoutTimerButton from '@/components/timer/WorkoutTimerButton';
 import { isAdmin, isTrainer } from '@/lib/rbac';
 import { resolveManagedTargetUser } from '@/lib/trainer-context';
 import WorkoutSessionManager from '@/components/workout/WorkoutSessionManager';
+import { getWorkoutSessionManagerKey } from '@/lib/workout-session-keys';
 
 function parseUserIdsQuery(userIds?: string) {
   return Array.from(new Set(
@@ -162,6 +163,7 @@ export default async function WorkoutDayPage({
       )}
 
       <WorkoutSessionManager
+        key={getWorkoutSessionManagerKey(targetUserId, program.id, day)}
         day={day}
         programId={program.id}
         program={program}
