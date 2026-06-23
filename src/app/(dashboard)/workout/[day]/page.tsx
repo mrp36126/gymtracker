@@ -2,13 +2,13 @@ import { getAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getStartOfTodayInSAST } from '@/lib/timezone';
 import { redirect } from 'next/navigation';
-import ExerciseCard from '@/components/workout/ExerciseCard';
 import type { Exercise } from '@/types';
 import Link from 'next/link';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 import WorkoutTimerButton from '@/components/timer/WorkoutTimerButton';
 import { isAdmin, isTrainer } from '@/lib/rbac';
 import { resolveManagedTargetUser } from '@/lib/trainer-context';
+import WorkoutSessionManager from '@/components/workout/WorkoutSessionManager';
 
 export default async function WorkoutDayPage({
   params,
@@ -110,19 +110,17 @@ export default async function WorkoutDayPage({
         </div>
       </div>
 
-      <div className="w-full max-w-lg mx-auto px-4 pt-5 overflow-hidden">
-        {exercisesWithLogs.map((ex, i) => (
-          <div key={ex.id}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
-                {i + 1}
-              </div>
-              <div className="h-px flex-1 bg-white/[0.05]"></div>
-            </div>
-              <ExerciseCard exercise={ex} readOnly={Boolean(targetUser.isTrainerUser)} targetUserId={targetUserId === user.id ? undefined : targetUserId} />
-          </div>
-        ))}
-      </div>
+      <WorkoutSessionManager
+        day={day}
+        programId={program.id}
+        program={program}
+        targetUserId={targetUserId}
+        targetUserName={targetUserName}
+        user={user}
+        initialExercises={exercisesWithLogs}
+        readOnly={Boolean(targetUser.isTrainerUser)}
+        isTrainingForSomeone={targetUserId !== user.id}
+      />
     </main>
   );
 }

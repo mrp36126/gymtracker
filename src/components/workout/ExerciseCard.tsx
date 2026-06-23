@@ -10,6 +10,7 @@ interface Props {
   exercise: Exercise;
   readOnly?: boolean;
   targetUserId?: string;
+  onDelete?: () => void;
 }
 
 function DetailImage({ src, alt }: { src: string; alt: string }) {
@@ -176,29 +177,43 @@ export default function ExerciseCard({ exercise, readOnly = false, targetUserId 
         {/* Exercise header */}
         <div className="flex items-start justify-between gap-3 mb-1">
           <h3 className="text-base font-extrabold text-white tracking-tight flex-1 pr-2">{exercise.name}</h3>
-          {!readOnly && (
-            <button
-              type="button"
-              onClick={() => isExerciseTimerActive ? stopExercise() : startExercise(exercise.id, exercise.name)}
-              className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide transition active:scale-95 ${
-                isExerciseTimerActive
-                  ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
-                  : 'border-white/10 bg-white/[0.04] text-white/40 hover:border-indigo-400/30 hover:text-white/70'
-              }`}
-              aria-label={`${isExerciseTimerActive ? 'Stop' : 'Start'} timer for ${exercise.name}`}
-            >
-              {isExerciseTimerActive ? (
-                <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M7 7h10v10H7z" />
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => isExerciseTimerActive ? stopExercise() : startExercise(exercise.id, exercise.name)}
+                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide transition active:scale-95 ${
+                  isExerciseTimerActive
+                    ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+                    : 'border-white/10 bg-white/[0.04] text-white/40 hover:border-indigo-400/30 hover:text-white/70'
+                }`}
+                aria-label={`${isExerciseTimerActive ? 'Stop' : 'Start'} timer for ${exercise.name}`}
+              >
+                {isExerciseTimerActive ? (
+                  <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 7h10v10H7z" />
+                  </svg>
+                ) : (
+                  <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 2h4M12 14l4-4M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
+                  </svg>
+                )}
+                {isExerciseTimerActive ? 'Stop' : 'Time'}
+              </button>
+            )}
+            {onDelete && !readOnly && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-red-400 transition hover:border-red-500/50 hover:bg-red-500/15 active:scale-95"
+                aria-label={`Delete ${exercise.name}`}
+              >
+                <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h16zM10 11v6M14 11v6" />
                 </svg>
-              ) : (
-                <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M10 2h4M12 14l4-4M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
-                </svg>
-              )}
-              {isExerciseTimerActive ? 'Stop' : 'Time'}
-            </button>
-          )}
+              </button>
+            )}
+          </div>
         </div>
         <p className="text-xs text-white/30 mb-4">
           {exercise.defaultSets} sets - {targetLabel}

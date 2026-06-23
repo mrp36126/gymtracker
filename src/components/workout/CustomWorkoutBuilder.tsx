@@ -143,6 +143,7 @@ export default function CustomWorkoutBuilder({ exercises }: Props) {
       window.localStorage.setItem(CUSTOM_WORKOUT_STORAGE_KEY, JSON.stringify({
         startedAt: new Date().toISOString(),
         exercises: selected,
+        allExercises: exercises,
       }));
 
       const response = await fetch('/api/custom-workout/session', {
