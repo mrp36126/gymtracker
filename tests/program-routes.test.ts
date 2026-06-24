@@ -2,14 +2,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const trainerUser = { id: 'trainer-user', isAdmin: false, isTrainer: false, isTrainerUser: true };
 const trainer = { id: 'trainer-1', isAdmin: false, isTrainer: true, isTrainerUser: false };
+const individualUser = { id: 'user-1', isAdmin: false, isTrainer: false, isTrainerUser: false };
 
 const prismaMock = vi.hoisted(() => ({
   program: {
     create: vi.fn(),
+    findFirst: vi.fn(),
+  },
+  exercise: {
+    findFirst: vi.fn(),
   },
   user: {
     findUnique: vi.fn(),
   },
+  $transaction: vi.fn(),
 }));
 
 vi.mock('@/lib/auth', () => ({
@@ -102,5 +108,59 @@ describe('program routes', () => {
     }));
 
     expect(response.status).toBe(403);
+  });
+
+  it('allows an individual user to remove an exercise from their own active custom session program', async () => {
+    vi.mocked(requireAuth).mockResolvedValueOnce({ user: individualUser, response: null } as any);
+    prismaMock.program.findFirst.mockResolvedValueOnce({
+      id: 'program-1',
+      userId: 'user-1',
+      isActive: true,
+      programType: 'primary',
+      user: {
+        id: 'user-1',
+        trainerId: null,
+        isAdmin: false,
+        isTrainer: false,
+        isTrainerUser: false,
+      },
+    });
+    prismaMock.exercise.findFirst.mockResolvedValueOnce({
+      id: 'exercise-1',
+      programId: 'program-1',
+      day: 'Monday',
+    });
+
+    const txDelete = vi.fn().mockResolvedValue(undefined);
+    const txFindMany = vi.fn().mockResolvedValue([{ id: 'exercise-2' }, { id: 'exercise-3' }]);
+    const txUpdate = vi.fn().mockResolvedValue(undefined);
+
+    prismaMock.$transaction.mockImplementationOnce(async (callback: any) => callback({
+      exercise: {
+        delete: txDelete,
+        findMany: txFindMany,
+        update: txUpdate,
+      },
+    }));
+
+    const response = await patchProgram(new Request('http://localhost/api/programs/program-1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ removeExerciseId: 'exercise-1' }),
+    }), {
+      params: Promise.resolve({ id: 'program-1' }),
+    });
+
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(txDelete).toHaveBeenCalledWith({ where: { id: 'exercise-1' } });
+    expect(txFindMany).toHaveBeenCalledWith({
+      where: { programId: 'program-1', day: 'Monday' },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+    expect(txUpdate).toHaveBeenCalledTimes(2);
+    expect(json.data.removedExerciseId).toBe('exercise-1');
   });
 });

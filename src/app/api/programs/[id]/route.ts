@@ -61,7 +61,7 @@ export async function PATCH(
 ) {
   const { user, response } = await requireAuth();
   if (response) return response;
-  if (!isAdmin(user!) && !isTrainer(user!)) return NextResponse.json({ error: 'Program management required' }, { status: 403 });
+  if (user!.isTrainerUser) return NextResponse.json({ error: 'Program management required' }, { status: 403 });
 
   const { id } = await params;
   let input;
@@ -79,8 +79,26 @@ export async function PATCH(
   if (!existing) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  if (!canManageProgram(user!, existing.user)) {
+
+  const canManage = canManageProgram(user!, existing.user);
+  const isExerciseMutation = Boolean(input.addExercise || input.removeExerciseId || input.reorderExercises);
+  const canSelfManageActivePrimaryExercises = (
+    existing.user.id === user!.id
+    && existing.isActive
+    && existing.programType === 'primary'
+    && !user!.isTrainerUser
+    && isExerciseMutation
+  );
+
+  if (!canManage && !canSelfManageActivePrimaryExercises) {
+    if (!isAdmin(user!) && !isTrainer(user!)) {
+      return NextResponse.json({ error: 'Program management required' }, { status: 403 });
+    }
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  if (!canManage && input.name) {
+    return NextResponse.json({ error: 'Program management required' }, { status: 403 });
   }
 
   if (input.addExercise) {
