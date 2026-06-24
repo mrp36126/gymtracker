@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 import WorkoutTimerButton from '@/components/timer/WorkoutTimerButton';
 import { isAdmin, isTrainer } from '@/lib/rbac';
+import { buildWorkoutLogOwnerWhere } from '@/lib/workout-log-identity';
 
 export default async function SupplementaryProgramPage({
   params,
@@ -53,7 +54,7 @@ export default async function SupplementaryProgramPage({
     exercisesByDay[day] = await Promise.all(
       byDay[day].map(async (ex) => {
         const lastLog = await prisma.workoutLog.findFirst({
-          where: { exerciseId: ex.id, userId: user.id },
+          where: buildWorkoutLogOwnerWhere(user, { exerciseId: ex.id }),
           orderBy: { loggedAt: 'desc' },
         });
         return { ...ex, lastLog: lastLog ?? null } as Exercise;

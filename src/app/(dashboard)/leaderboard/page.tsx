@@ -21,6 +21,7 @@ export default async function LeaderboardPage() {
         select: {
           id: true,
           name: true,
+          email: true,
         },
       },
       exercise: {
@@ -44,7 +45,7 @@ export default async function LeaderboardPage() {
       exerciseKey: string;
       exerciseName: string;
       entries: Array<{
-        userId: string;
+        userKey: string;
         userName: string;
         weight: number;
         reps: number;
@@ -55,6 +56,7 @@ export default async function LeaderboardPage() {
 
   for (const log of logs) {
     const exerciseKey = log.exercise.name.trim().toLowerCase();
+    const userKey = log.user.email?.trim().toLowerCase() || log.userId;
     const existingGroup = groupedLeaders.get(exerciseKey);
     if (!existingGroup) {
       groupedLeaders.set(exerciseKey, {
@@ -62,7 +64,7 @@ export default async function LeaderboardPage() {
         exerciseName: log.exercise.name,
         entries: [
           {
-            userId: log.userId,
+            userKey,
             userName: log.user.name,
             weight: log.weight,
             reps: log.reps,
@@ -73,11 +75,11 @@ export default async function LeaderboardPage() {
       continue;
     }
 
-    const userAlreadyRanked = existingGroup.entries.some((entry) => entry.userId === log.userId);
+    const userAlreadyRanked = existingGroup.entries.some((entry) => entry.userKey === userKey);
     if (userAlreadyRanked) continue;
 
     existingGroup.entries.push({
-      userId: log.userId,
+      userKey,
       userName: log.user.name,
       weight: log.weight,
       reps: log.reps,
@@ -127,7 +129,7 @@ export default async function LeaderboardPage() {
                 <div className="space-y-3">
                   {exerciseGroup.entries.map((entry, index) => (
                     <div
-                      key={`${exerciseGroup.exerciseKey}-${entry.userId}`}
+                      key={`${exerciseGroup.exerciseKey}-${entry.userKey}`}
                       className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3"
                     >
                       <div className="flex items-center justify-between gap-3">

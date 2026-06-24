@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getTodayName } from '@/lib/day-resolver';
 import { findActivePrimaryProgramForUser, findExerciseForUser } from '@/lib/program-scope';
+import { buildWorkoutLogOwnerWhere } from '@/lib/workout-log-identity';
 import { z } from 'zod';
 
 // GET /api/workouts?programId=X&day=Monday
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
   const exercisesWithLog = await Promise.all(
     exercises.map(async (ex) => {
       const lastLog = await prisma.workoutLog.findFirst({
-        where: { exerciseId: ex.id, userId: user!.id },
+        where: buildWorkoutLogOwnerWhere(user!, { exerciseId: ex.id }),
         orderBy: { loggedAt: 'desc' },
       });
       return { ...ex, lastLog };

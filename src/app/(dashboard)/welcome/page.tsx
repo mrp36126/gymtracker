@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { canUseFlexibleSession, canUseTrainerCustomWorkout, isIndividualUser } from '@/lib/rbac';
 import TrainerHomeOptions from '@/components/trainer/TrainerHomeOptions';
 import { getStartOfTodayInSAST, getDateXDaysAgoInSAST } from '@/lib/timezone';
+import { buildWorkoutLogOwnerWhere } from '@/lib/workout-log-identity';
 
 export default async function WelcomePage() {
   let user;
@@ -98,10 +99,9 @@ export default async function WelcomePage() {
     if (user.isTrainerUser) {
       const thirtyDaysAgo = getDateXDaysAgoInSAST(30);
       lastMonthLogCount = await prisma.workoutLog.count({
-        where: {
-          userId: user.id,
+        where: buildWorkoutLogOwnerWhere(user, {
           loggedAt: { gte: thirtyDaysAgo },
-        },
+        }),
       });
     }
 

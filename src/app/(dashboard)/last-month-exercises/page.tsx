@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { buildWorkoutLogOwnerWhere } from '@/lib/workout-log-identity';
 
 function formatLogSummary(log: {
   weight: number;
@@ -45,10 +46,9 @@ export default async function LastMonthExercisesPage() {
         })
       : Promise.resolve(null),
     prisma.workoutLog.findMany({
-      where: {
-        userId: user.id,
+      where: buildWorkoutLogOwnerWhere(user, {
         loggedAt: { gte: thirtyDaysAgo },
-      },
+      }),
       include: {
         exercise: {
           select: {

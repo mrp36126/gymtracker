@@ -6,6 +6,7 @@ import ProgressClient from '@/components/progress/ProgressClient';
 import { findActivePrimaryProgramForUser } from '@/lib/program-scope';
 import { canViewUserProgress } from '@/lib/rbac';
 import { resolveManagedTargetUser } from '@/lib/trainer-context';
+import { buildWorkoutLogOwnerWhere } from '@/lib/workout-log-identity';
 
 export default async function ProgressPage({ searchParams }: { searchParams?: Promise<{ userId?: string }> }) {
   const user = await getAuthUser();
@@ -30,8 +31,10 @@ export default async function ProgressPage({ searchParams }: { searchParams?: Pr
     if (!activePrimaryProgram) redirect('/welcome');
   }
 
+  const workoutLogOwner = targetUserId === user.id ? user : targetUser;
+
   const logs = await prisma.workoutLog.findMany({
-    where: { userId: targetUserId },
+    where: buildWorkoutLogOwnerWhere(workoutLogOwner),
     include: { exercise: true },
     orderBy: { loggedAt: 'asc' },
   });

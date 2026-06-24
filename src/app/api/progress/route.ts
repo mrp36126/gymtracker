@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { findActivePrimaryProgramForUser, findExerciseForUser } from '@/lib/program-scope';
 import { canViewUserProgress } from '@/lib/rbac';
+import { buildWorkoutLogOwnerWhere } from '@/lib/workout-log-identity';
 
 // GET /api/progress?exerciseId=X
 export async function GET(req: NextRequest) {
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
     ? user!
     : await prisma.user.findUnique({
         where: { id: targetUserId },
-        select: { id: true, trainerId: true },
+        select: { id: true, email: true, trainerId: true },
       });
 
   if (!canViewUserProgress(user!, targetUser)) {
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const where = { userId: targetUserId, ...(exerciseId ? { exerciseId } : {}) };
+  const where = buildWorkoutLogOwnerWhere(targetUser!, exerciseId ? { exerciseId } : {});
 
   const logs = await prisma.workoutLog.findMany({
     where,

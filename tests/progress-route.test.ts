@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const adminUser = { id: 'admin-1', isAdmin: true, isTrainer: false, isTrainerUser: false };
-const trainerUser = { id: 'trainer-1', isAdmin: false, isTrainer: true, isTrainerUser: false };
+const adminUser = { id: 'admin-1', email: 'admin@example.com', isAdmin: true, isTrainer: false, isTrainerUser: false };
+const trainerUser = { id: 'trainer-1', email: 'trainer@example.com', isAdmin: false, isTrainer: true, isTrainerUser: false };
 
 const prismaMock = vi.hoisted(() => ({
   user: {
@@ -36,7 +36,7 @@ describe('progress route', () => {
 
   it('allows a trainer to fetch progress for an assigned user', async () => {
     requireAuthMock.mockResolvedValueOnce({ user: trainerUser, response: null });
-    prismaMock.user.findUnique.mockResolvedValueOnce({ id: 'athlete-1', trainerId: 'trainer-1' });
+    prismaMock.user.findUnique.mockResolvedValueOnce({ id: 'athlete-1', email: 'athlete@example.com', trainerId: 'trainer-1' });
     prismaMock.workoutLog.findMany.mockResolvedValueOnce([
       {
         loggedAt: new Date('2026-06-19T12:00:00Z'),
@@ -51,13 +51,18 @@ describe('progress route', () => {
 
     expect(response.status).toBe(200);
     expect(prismaMock.workoutLog.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: { userId: 'athlete-1' },
+      where: {
+        OR: [
+          { userId: 'athlete-1' },
+          { user: { email: 'athlete@example.com' } },
+        ],
+      },
     }));
   });
 
   it('blocks a trainer from viewing an unassigned users progress', async () => {
     requireAuthMock.mockResolvedValueOnce({ user: trainerUser, response: null });
-    prismaMock.user.findUnique.mockResolvedValueOnce({ id: 'athlete-2', trainerId: 'other-trainer' });
+    prismaMock.user.findUnique.mockResolvedValueOnce({ id: 'athlete-2', email: 'athlete2@example.com', trainerId: 'other-trainer' });
 
     const response = await GET(new Request('http://localhost/api/progress?userId=athlete-2'));
 
@@ -67,7 +72,7 @@ describe('progress route', () => {
 
   it('allows an admin to fetch any users progress', async () => {
     requireAuthMock.mockResolvedValueOnce({ user: adminUser, response: null });
-    prismaMock.user.findUnique.mockResolvedValueOnce({ id: 'athlete-3', trainerId: 'other-trainer' });
+    prismaMock.user.findUnique.mockResolvedValueOnce({ id: 'athlete-3', email: 'athlete3@example.com', trainerId: 'other-trainer' });
     prismaMock.workoutLog.findMany.mockResolvedValueOnce([]);
 
     const response = await GET(new Request('http://localhost/api/progress?userId=athlete-3'));

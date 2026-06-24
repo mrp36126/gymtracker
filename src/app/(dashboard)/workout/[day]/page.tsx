@@ -10,6 +10,7 @@ import { isAdmin, isTrainer } from '@/lib/rbac';
 import { resolveManagedTargetUser } from '@/lib/trainer-context';
 import WorkoutSessionManager from '@/components/workout/WorkoutSessionManager';
 import { getWorkoutSessionManagerKey } from '@/lib/workout-session-keys';
+import { buildWorkoutLogOwnerWhere } from '@/lib/workout-log-identity';
 
 function parseUserIdsQuery(userIds?: string) {
   return Array.from(new Set(
@@ -53,6 +54,7 @@ export default async function WorkoutDayPage({
 
   const targetUserId = targetUser.id;
   const targetUserName = targetUserId === user.id ? user.name : targetUser.name ?? 'Selected user';
+  const workoutLogOwner = targetUserId === user.id ? user : targetUser;
   const viewerCanCaptureForTarget = isTrainer(user) || isAdmin(user) || targetUserId === user.id;
 
   const startOfToday = getStartOfTodayInSAST();
@@ -94,7 +96,7 @@ export default async function WorkoutDayPage({
   const exercisesWithLogs: Exercise[] = await Promise.all(
     exercises.map(async ex => {
       const lastLog = await prisma.workoutLog.findFirst({
-        where: { exerciseId: ex.id, userId: targetUserId },
+        where: buildWorkoutLogOwnerWhere(workoutLogOwner, { exerciseId: ex.id }),
         orderBy: { loggedAt: 'desc' },
       });
       return { ...ex, lastLog: lastLog ?? null } as Exercise;

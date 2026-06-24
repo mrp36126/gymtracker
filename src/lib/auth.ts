@@ -8,9 +8,29 @@ export async function getAuthUser() {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return null;
 
+    const authEmail = user.email?.trim().toLowerCase();
+
     let dbUser = await prisma.user.findUnique({
       where: { supabaseId: user.id },
     });
+
+    if (!dbUser && authEmail) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: { equals: authEmail, mode: 'insensitive' },
+        },
+      });
+
+      if (existingUser) {
+        dbUser = await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            supabaseId: user.id,
+            email: authEmail,
+          },
+        });
+      }
+    }
 
     if (!dbUser) {
       const name =
@@ -23,8 +43,13 @@ export async function getAuthUser() {
         data: {
           supabaseId: user.id,
           name,
-          email: user.email ?? `${user.id}@unknown`,
+          email: authEmail ?? `${user.id}@unknown`,
         },
+      });
+    } else if (authEmail && dbUser.email !== authEmail) {
+      dbUser = await prisma.user.update({
+        where: { id: dbUser.id },
+        data: { email: authEmail },
       });
     }
 
