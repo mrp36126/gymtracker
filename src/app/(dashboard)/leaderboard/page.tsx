@@ -2,6 +2,12 @@ import { getAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import LeaderboardManager from '@/components/admin/LeaderboardManager';
+import {
+  buildLeaderboard,
+  formatDistanceKm,
+  formatDuration,
+} from '@/lib/leaderboard';
 
 function formatCapturedAt(date: Date) {
   return new Intl.DateTimeFormat('en', {
@@ -15,84 +21,59 @@ export default async function LeaderboardPage() {
   const user = await getAuthUser();
   if (!user) redirect('/login');
 
-  const logs = await prisma.workoutLog.findMany({
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      exercise: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-    orderBy: [
-      { exercise: { name: 'asc' } },
-      { weight: 'desc' },
-      { reps: 'desc' },
-      { loggedAt: 'desc' },
-    ],
-  });
-
-  const groupedLeaders = new Map<
-    string,
-    {
-      exerciseKey: string;
-      exerciseName: string;
-      entries: Array<{
-        userKey: string;
-        userName: string;
-        weight: number;
-        reps: number;
-        loggedAt: Date;
-      }>;
-    }
-  >();
-
-  for (const log of logs) {
-    const exerciseKey = log.exercise.name.trim().toLowerCase();
-    const userKey = log.user.email?.trim().toLowerCase() || log.userId;
-    const existingGroup = groupedLeaders.get(exerciseKey);
-    if (!existingGroup) {
-      groupedLeaders.set(exerciseKey, {
-        exerciseKey,
-        exerciseName: log.exercise.name,
-        entries: [
-          {
-            userKey,
-            userName: log.user.name,
-            weight: log.weight,
-            reps: log.reps,
-            loggedAt: log.loggedAt,
+  const [logs, managementData] = await Promise.all([
+    prisma.workoutLog.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
-        ],
-      });
-      continue;
-    }
+        },
+        exercise: {
+          select: {
+            id: true,
+            name: true,
+            muscleGroup: true,
+          },
+        },
+      },
+      orderBy: [
+        { exercise: { name: 'asc' } },
+        { weight: 'desc' },
+        { reps: 'desc' },
+        { loggedAt: 'desc' },
+      ],
+    }),
+    user.isAdmin ? Promise.all([
+      prisma.user.findMany({
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, email: true },
+      }),
+      prisma.exercise.findMany({
+        orderBy: [{ name: 'asc' }, { createdAt: 'desc' }],
+        select: { id: true, name: true, muscleGroup: true },
+      }),
+    ]) : Promise.resolve(null),
+  ]);
 
-    const userAlreadyRanked = existingGroup.entries.some((entry) => entry.userKey === userKey);
-    if (userAlreadyRanked) continue;
-
-    existingGroup.entries.push({
-      userKey,
-      userName: log.user.name,
-      weight: log.weight,
-      reps: log.reps,
-      loggedAt: log.loggedAt,
-    });
-  }
-
-  const leaderboardByExercise = Array.from(groupedLeaders.values())
-    .map((group) => ({
-      ...group,
-      entries: group.entries.slice(0, 10),
-    }))
-    .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
+  const leaderboardByExercise = buildLeaderboard(logs);
+  const adminEntries = logs.map((log) => ({
+    id: log.id,
+    weight: log.weight,
+    sets: log.sets,
+    reps: log.reps,
+    durationSeconds: log.durationSeconds,
+    distanceKm: log.distanceKm,
+    notes: log.notes,
+    loggedAt: log.loggedAt.toISOString(),
+    user: log.user,
+    exercise: {
+      id: log.exercise.id,
+      name: log.exercise.name,
+    },
+  }));
 
   return (
     <main className="min-h-screen bg-[#0A0A0F] pb-24">
@@ -107,9 +88,17 @@ export default async function LeaderboardPage() {
           <p className="text-xs font-semibold tracking-widest text-indigo-400 uppercase mb-1">Leaderboard</p>
           <h1 className="text-2xl font-extrabold tracking-tight text-white">Top 10 users per exercise</h1>
           <p className="text-sm text-white/40 mt-1">
-            Each exercise shows up to 10 users ranked by their heaviest recorded lift for that exercise.
+            Strength exercises rank by heaviest lift. Running, Treadmill, SkiErg, and Rowing rank by distance and time.
           </p>
         </div>
+
+        {user.isAdmin && managementData && (
+          <LeaderboardManager
+            initialEntries={adminEntries}
+            users={managementData[0]}
+            exercises={managementData[1]}
+          />
+        )}
 
         {leaderboardByExercise.length === 0 ? (
           <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-10 text-center">
@@ -143,12 +132,25 @@ export default async function LeaderboardPage() {
                         </div>
 
                         <div className="text-right">
-                          <p className="text-xl font-extrabold tabular-nums text-white">
-                            {`${entry.weight.toLocaleString()}kg`}
-                          </p>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
-                            {`${entry.reps} reps`}
-                          </p>
+                          {exerciseGroup.metricType === 'endurance' ? (
+                            <>
+                              <p className="text-xl font-extrabold tabular-nums text-white">
+                                {formatDistanceKm(entry.distanceKm, exerciseGroup.exerciseName)}
+                              </p>
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
+                                {formatDuration(entry.durationSeconds)}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-xl font-extrabold tabular-nums text-white">
+                                {`${entry.weight.toLocaleString()}kg`}
+                              </p>
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
+                                {`${entry.reps} reps`}
+                              </p>
+                            </>
+                          )}
                         </div>
                       </div>
 
