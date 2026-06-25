@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth';
 import { loadExerciseCatalog } from '@/lib/exercise-catalog';
 import { prisma } from '@/lib/prisma';
 import { getTodayName } from '@/lib/day-resolver';
-import { getNowInSAST, getStartOfTodayInSAST } from '@/lib/timezone';
+import { getNowInSAST } from '@/lib/timezone';
 
 const SelectedCustomExerciseSchema = z.object({
   exerciseId: z.string().min(1),
@@ -51,7 +51,6 @@ export async function POST(req: NextRequest) {
   }
 
   const now = getNowInSAST();
-  const startOfToday = getStartOfTodayInSAST();
   const todayName = getTodayName();
   const name = `Custom Session · ${sessionDateKey(now)}`;
 
@@ -63,15 +62,6 @@ export async function POST(req: NextRequest) {
         isActive: true,
       },
       data: { isActive: false },
-    });
-
-    await tx.program.deleteMany({
-      where: {
-        userId: user!.id,
-        programType: 'primary',
-        name: { startsWith: 'Custom Session · ' },
-        createdAt: { gte: startOfToday },
-      },
     });
 
     return tx.program.create({

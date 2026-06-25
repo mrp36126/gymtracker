@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { WorkoutLog } from '@/types';
 
 interface SetRow {
@@ -96,6 +96,7 @@ export default function SetLogger({
   const [sets, setSets] = useState<SetRow[]>(initSets);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const savingSetIds = useRef(new Set<string>());
 
   const updateSet = (
     id: string,
@@ -106,6 +107,10 @@ export default function SetLogger({
   };
 
   const completeSet = async (setRow: SetRow) => {
+    if (setRow.completed || setRow.logId || savingSetIds.current.has(setRow.id)) {
+      return;
+    }
+
     const durationSeconds = Math.round(parseFloat(setRow.durationMinutes) * 60);
 
     if (isTimeDistance && (!setRow.durationMinutes || !setRow.distanceKm || durationSeconds <= 0)) {
@@ -134,6 +139,7 @@ export default function SetLogger({
     }
 
     setError('');
+    savingSetIds.current.add(setRow.id);
     setSaving(setRow.id);
     try {
       const res = await fetch('/api/workouts/sets', {
@@ -163,6 +169,7 @@ export default function SetLogger({
     } catch (e: any) {
       setError(e.message);
     } finally {
+      savingSetIds.current.delete(setRow.id);
       setSaving(null);
     }
   };

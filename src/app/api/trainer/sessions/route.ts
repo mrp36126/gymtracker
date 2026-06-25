@@ -6,7 +6,7 @@ import { resolveManagedTargetUser } from '@/lib/trainer-context';
 import { loadExerciseCatalog } from '@/lib/exercise-catalog';
 import { prisma } from '@/lib/prisma';
 import { getTodayName } from '@/lib/day-resolver';
-import { getNowInSAST, getStartOfTodayInSAST } from '@/lib/timezone';
+import { getNowInSAST } from '@/lib/timezone';
 
 const SelectedSessionExerciseSchema = z.object({
   exerciseId: z.string().min(1),
@@ -78,7 +78,6 @@ export async function POST(req: NextRequest) {
   }
 
   const now = getNowInSAST();
-  const startOfToday = getStartOfTodayInSAST();
   const todayName = getTodayName();
   const name = `Trainer Session · ${sessionDateKey(now)}`;
 
@@ -93,15 +92,6 @@ export async function POST(req: NextRequest) {
           isActive: true,
         },
         data: { isActive: false },
-      });
-
-      await tx.program.deleteMany({
-        where: {
-          userId: targetUser.id,
-          programType: 'primary',
-          name: { startsWith: 'Trainer Session · ' },
-          createdAt: { gte: startOfToday },
-        },
       });
 
       const created = await tx.program.create({

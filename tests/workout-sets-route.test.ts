@@ -13,6 +13,7 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
   },
   workoutLog: {
+    findFirst: vi.fn(),
     create: vi.fn(),
   },
 }));
@@ -44,6 +45,7 @@ describe('workout sets route', () => {
     findExerciseForUserMock.mockResolvedValue({ id: 'exercise-1', muscleGroup: 'Chest', name: 'Bench Press' });
     prismaMock.program.findFirst.mockResolvedValue({ id: 'program-1' });
     prismaMock.exercise.findFirst.mockResolvedValue({ id: 'exercise-1', muscleGroup: 'Chest', name: 'Bench Press' });
+    prismaMock.workoutLog.findFirst.mockResolvedValue(null);
     prismaMock.workoutLog.create.mockResolvedValue({ id: 'log-1' });
   });
 
@@ -123,6 +125,35 @@ describe('workout sets route', () => {
     }));
 
     expect(response.status).toBe(403);
+    expect(prismaMock.workoutLog.create).not.toHaveBeenCalled();
+  });
+
+  it('returns the existing set log instead of creating a duplicate for repeated ticks', async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce({
+      id: 'cmcuid000000000000000101',
+      trainerId: 'trainer-1',
+      isTrainerUser: false,
+      isAdmin: false,
+      isTrainer: false,
+    });
+    prismaMock.workoutLog.findFirst.mockResolvedValueOnce({ id: 'existing-log-1', notes: 'Set 1' });
+
+    const response = await POST(new Request('http://localhost/api/workouts/sets', {
+      method: 'POST',
+      body: JSON.stringify({
+        exerciseId: 'cmcuid000000000000000001',
+        setNumber: 1,
+        weight: 100,
+        reps: 8,
+        targetUserId: 'cmcuid000000000000000101',
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toEqual({ data: { id: 'existing-log-1', notes: 'Set 1' }, duplicate: true });
     expect(prismaMock.workoutLog.create).not.toHaveBeenCalled();
   });
 });

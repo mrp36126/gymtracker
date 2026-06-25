@@ -140,6 +140,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Enter weight and reps first' }, { status: 422 });
   }
 
+  const setNote = `Set ${body.setNumber}`;
+  const existingLog = await prisma.workoutLog.findFirst({
+    where: {
+      userId: targetUserId,
+      exerciseId: exercise.id,
+      notes: setNote,
+      loggedAt: { gte: startOfToday },
+    },
+    orderBy: { loggedAt: 'desc' },
+  });
+
+  if (existingLog) {
+    return NextResponse.json({ data: existingLog, duplicate: true }, { status: 200 });
+  }
+
   const log = await prisma.workoutLog.create({
     data: {
       weight:     logMode === 'timeDistance' || logMode === 'timeOnly' || logMode === 'repsOnly' ? 0 : body.weight!,
@@ -147,7 +162,7 @@ export async function POST(req: NextRequest) {
       reps:       logMode === 'timeDistance' || logMode === 'timeOnly' || logMode === 'weightDistance' ? 1 : body.reps!,
       durationSeconds: logMode === 'timeDistance' || logMode === 'timeOnly' ? body.durationSeconds : null,
       distanceKm: logMode === 'timeDistance' || logMode === 'weightDistance' ? body.distanceKm : null,
-      notes:      `Set ${body.setNumber}`,
+      notes:      setNote,
       userId:     targetUserId,
       exerciseId: exercise.id,
     },
