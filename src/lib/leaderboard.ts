@@ -1,3 +1,5 @@
+import { formatMeters, formatTimeMMSS } from '@/lib/metrics-format';
+
 export type LeaderboardMetricType = 'endurance' | 'strength';
 
 export type LeaderboardLog = {
@@ -116,16 +118,11 @@ export function buildLeaderboard(logs: LeaderboardLog[]) {
 }
 
 export function formatDuration(seconds: number | null | undefined) {
-  if (!seconds) return '-';
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+  const formatted = formatTimeMMSS(seconds);
+  return formatted || '-';
 }
 
 export function formatDistanceKm(distanceKm: number | null | undefined, exerciseName: string) {
-  if (!distanceKm) return '-';
-  if (normalizeExerciseName(exerciseName) === 'rowing') {
-    return `${Math.round(distanceKm * 1000).toLocaleString('en-US')} m`;
-  }
-  return `${distanceKm.toLocaleString('en-US', { maximumFractionDigits: 2 })} km`;
+  void exerciseName;
+  return formatMeters(distanceKm);
 }

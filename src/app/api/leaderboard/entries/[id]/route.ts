@@ -22,7 +22,7 @@ function validateMetrics(input: z.infer<typeof LeaderboardEntrySchema>, exercise
 
   if (metricType === 'endurance') {
     if (!input.durationSeconds || !input.distanceKm) {
-      return 'Distance and time are required for endurance leaderboard entries';
+      return 'Distance (meters) and time (mm:ss) are required for endurance leaderboard entries';
     }
     return null;
   }

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { buildWorkoutLogOwnerWhere } from '@/lib/workout-log-identity';
+import { formatMeters, formatTimeMMSS } from '@/lib/metrics-format';
 
 function formatLogSummary(log: {
   weight: number;
@@ -11,20 +12,16 @@ function formatLogSummary(log: {
   durationSeconds: number | null;
   distanceKm: number | null;
 }) {
-  if (log.durationSeconds && log.distanceKm) {
-    const minutes = Math.floor(log.durationSeconds / 60);
-    const seconds = log.durationSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, '0')} min · ${log.distanceKm} km`;
+  if (log.durationSeconds && log.distanceKm !== null && log.distanceKm !== undefined) {
+    return `${formatTimeMMSS(log.durationSeconds)} · ${formatMeters(log.distanceKm)}`;
   }
 
   if (log.durationSeconds) {
-    const minutes = Math.floor(log.durationSeconds / 60);
-    const seconds = log.durationSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, '0')} min`;
+    return formatTimeMMSS(log.durationSeconds);
   }
 
-  if (log.distanceKm) {
-    return `${log.weight} kg · ${log.distanceKm} km`;
+  if (log.distanceKm !== null && log.distanceKm !== undefined) {
+    return `${log.weight} kg · ${formatMeters(log.distanceKm)}`;
   }
 
   return `${log.weight} kg · ${log.sets} sets × ${log.reps} reps`;

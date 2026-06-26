@@ -4,6 +4,7 @@ import type { Exercise, WorkoutLog } from '@/types';
 import SetLogger from './SetLogger';
 import ExerciseInstructionModal from './ExerciseInstructionModal';
 import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
+import { formatMeters, formatTimeMMSS } from '@/lib/metrics-format';
 
 interface Props {
   exercise: Exercise;
@@ -49,11 +50,11 @@ function getExerciseTargetLabel(muscleGroup: string, exerciseName: string, defau
 
   if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)
     || ['running', 'rowing', 'cycling', 'skierg'].includes(normalizedName)) {
-    return 'time and distance target';
+    return 'time (mm:ss) and distance (m) target';
   }
 
   if (['sledpush', 'sledpull', 'farmers'].includes(normalized)) {
-    return 'weight and distance target';
+    return 'weight and distance (m) target';
   }
 
   if (normalized === 'burpee') {
@@ -64,20 +65,16 @@ function getExerciseTargetLabel(muscleGroup: string, exerciseName: string, defau
 }
 
 function formatLastCapturedLog(lastLog: WorkoutLog) {
-  if (lastLog.durationSeconds && lastLog.distanceKm) {
-    const minutes = Math.floor(lastLog.durationSeconds / 60);
-    const seconds = lastLog.durationSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, '0')} min · ${lastLog.distanceKm} km`;
+  if (lastLog.durationSeconds && lastLog.distanceKm !== null && lastLog.distanceKm !== undefined) {
+    return `${formatTimeMMSS(lastLog.durationSeconds)} · ${formatMeters(lastLog.distanceKm)}`;
   }
 
   if (lastLog.durationSeconds) {
-    const minutes = Math.floor(lastLog.durationSeconds / 60);
-    const seconds = lastLog.durationSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, '0')} min`;
+    return formatTimeMMSS(lastLog.durationSeconds);
   }
 
-  if (lastLog.distanceKm) {
-    return `${lastLog.weight} kg · ${lastLog.distanceKm} km`;
+  if (lastLog.distanceKm !== null && lastLog.distanceKm !== undefined) {
+    return `${lastLog.weight} kg · ${formatMeters(lastLog.distanceKm)}`;
   }
 
   return `${lastLog.weight} kg · ${lastLog.sets} sets × ${lastLog.reps} reps`;

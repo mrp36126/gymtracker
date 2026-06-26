@@ -127,15 +127,15 @@ export async function POST(req: NextRequest) {
   const logMode = getLogMode(exercise.muscleGroup, exercise.name);
 
   if (logMode === 'timeDistance' && (!body.durationSeconds || !body.distanceKm)) {
-    return NextResponse.json({ error: 'Enter time and distance first' }, { status: 422 });
+    return NextResponse.json({ error: 'Enter time (mm:ss) and distance (meters) first' }, { status: 422 });
   }
 
   if (logMode === 'timeOnly' && !body.durationSeconds) {
-    return NextResponse.json({ error: 'Enter time first' }, { status: 422 });
+    return NextResponse.json({ error: 'Enter time as mm:ss first' }, { status: 422 });
   }
 
   if (logMode === 'weightDistance' && (body.weight === undefined || !body.distanceKm)) {
-    return NextResponse.json({ error: 'Enter weight and distance first' }, { status: 422 });
+    return NextResponse.json({ error: 'Enter weight and distance (meters) first' }, { status: 422 });
   }
 
   if (logMode === 'repsOnly' && body.reps === undefined) {

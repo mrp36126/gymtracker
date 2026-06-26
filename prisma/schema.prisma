@@ -70,6 +70,7 @@ model WorkoutLog {
   sets       Int
   reps       Int
   durationSeconds Int?
+  // Backward-compatible column name; values are stored in meters.
   distanceKm Float?
   notes      String?
   loggedAt   DateTime @default(now())

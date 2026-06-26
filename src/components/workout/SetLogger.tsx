@@ -1,14 +1,15 @@
 'use client';
 import { useRef, useState } from 'react';
 import type { WorkoutLog } from '@/types';
+import { formatMeters, formatTimeMMSS, parseMeters, parseTimeMMSS } from '@/lib/metrics-format';
 
 interface SetRow {
   id: string;
   setNumber: number;
   weight: string;
   reps: string;
-  durationMinutes: string;
-  distanceKm: string;
+  durationMMSS: string;
+  distanceMeters: string;
   completed: boolean;
   logId?: string;
 }
@@ -54,13 +55,6 @@ function getLogMode(muscleGroup: string, exerciseName: string): LogMode {
   return 'strength';
 }
 
-function formatDuration(seconds?: number | null) {
-  if (!seconds) return '';
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
-}
-
 export default function SetLogger({
   exerciseId,
   exerciseName,
@@ -88,8 +82,8 @@ export default function SetLogger({
       setNumber: i + 1,
       weight: lastLog && hasWeight ? String(lastLog.weight) : '',
       reps: parseDefaultReps(defaultReps),
-      durationMinutes: '',
-      distanceKm: '',
+      durationMMSS: '',
+      distanceMeters: '',
       completed: false,
     }));
 
@@ -100,7 +94,7 @@ export default function SetLogger({
 
   const updateSet = (
     id: string,
-    field: 'weight' | 'reps' | 'durationMinutes' | 'distanceKm',
+    field: 'weight' | 'reps' | 'durationMMSS' | 'distanceMeters',
     value: string
   ) => {
     setSets(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
@@ -111,20 +105,31 @@ export default function SetLogger({
       return;
     }
 
-    const durationSeconds = Math.round(parseFloat(setRow.durationMinutes) * 60);
+    const durationSeconds = hasDuration ? parseTimeMMSS(setRow.durationMMSS) : null;
+    const distanceMeters = hasDistance ? parseMeters(setRow.distanceMeters) : null;
 
-    if (isTimeDistance && (!setRow.durationMinutes || !setRow.distanceKm || durationSeconds <= 0)) {
-      setError('Enter time and distance first');
+    if (hasDuration && durationSeconds === null) {
+      setError('Enter time as mm:ss (example: 12:45)');
       return;
     }
 
-    if (isTimeOnly && (!setRow.durationMinutes || durationSeconds <= 0)) {
-      setError('Enter time first');
+    if (hasDistance && distanceMeters === null) {
+      setError('Enter distance in meters as a positive number');
       return;
     }
 
-    if (isWeightDistance && (!setRow.weight || !setRow.distanceKm)) {
-      setError('Enter weight and distance first');
+    if (isTimeDistance && (durationSeconds === null || distanceMeters === null)) {
+      setError('Enter time (mm:ss) and distance (meters) first');
+      return;
+    }
+
+    if (isTimeOnly && durationSeconds === null) {
+      setError('Enter time as mm:ss first');
+      return;
+    }
+
+    if (isWeightDistance && (!setRow.weight || distanceMeters === null)) {
+      setError('Enter weight and distance (meters) first');
       return;
     }
 
@@ -152,8 +157,8 @@ export default function SetLogger({
           ...(targetUserId ? { targetUserId } : {}),
           ...(hasWeight ? { weight: parseFloat(setRow.weight) } : {}),
           ...(hasReps ? { reps: parseInt(setRow.reps) } : {}),
-          ...(hasDuration ? { durationSeconds } : {}),
-          ...(hasDistance ? { distanceKm: parseFloat(setRow.distanceKm) } : {}),
+          ...(hasDuration && durationSeconds !== null ? { durationSeconds } : {}),
+          ...(hasDistance && distanceMeters !== null ? { distanceKm: distanceMeters } : {}),
         }),
       });
       if (res.status === 401) {
@@ -182,8 +187,8 @@ export default function SetLogger({
       setNumber: next,
       weight: last?.weight ?? '',
       reps: last?.reps ?? parseDefaultReps(defaultReps),
-      durationMinutes: last?.durationMinutes ?? '',
-      distanceKm: last?.distanceKm ?? '',
+      durationMMSS: last?.durationMMSS ?? '',
+      distanceMeters: last?.distanceMeters ?? '',
       completed: false,
     }]);
   };
@@ -223,11 +228,11 @@ export default function SetLogger({
         <div />
         <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">Previous</p>
         <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">
-          {hasDuration ? 'Min' : isRepsOnly ? 'Reps' : 'KG'}
+          {hasDuration ? 'Time' : isRepsOnly ? 'Reps' : 'KG'}
         </p>
         {!isRepsOnly && !isTimeOnly && (
           <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest text-center">
-            {hasDistance ? 'Dist' : 'Reps'}
+            {hasDistance ? 'Dist (m)' : 'Reps'}
           </p>
         )}
         <div />
@@ -254,17 +259,17 @@ export default function SetLogger({
 
             {/* Previous */}
             <div className="text-center">
-              {lastLog && isTimeDistance && lastLog.durationSeconds && lastLog.distanceKm ? (
+              {lastLog && isTimeDistance && lastLog.durationSeconds && lastLog.distanceKm !== null && lastLog.distanceKm !== undefined ? (
                 <span className="text-[11px] text-white/25">
-                  {formatDuration(lastLog.durationSeconds)} / {lastLog.distanceKm}
+                  {formatTimeMMSS(lastLog.durationSeconds)} / {formatMeters(lastLog.distanceKm)}
                 </span>
               ) : lastLog && isTimeOnly && lastLog.durationSeconds ? (
                 <span className="text-[11px] text-white/25">
-                  {formatDuration(lastLog.durationSeconds)}
+                  {formatTimeMMSS(lastLog.durationSeconds)}
                 </span>
               ) : lastLog && isWeightDistance && lastLog.distanceKm !== null && lastLog.distanceKm !== undefined ? (
                 <span className="text-[11px] text-white/25">
-                  {lastLog.weight}kg / {lastLog.distanceKm}
+                  {lastLog.weight}kg / {formatMeters(lastLog.distanceKm)}
                 </span>
               ) : lastLog && isRepsOnly ? (
                 <span className="text-[11px] text-white/25">
@@ -286,14 +291,15 @@ export default function SetLogger({
                 : 'bg-white/[0.06] border-white/[0.08]'
             }`}>
               <input
-                type="number"
-                inputMode="decimal"
-                step={hasDuration ? '0.1' : isRepsOnly ? '1' : '0.5'}
-                min={hasDuration ? '0.1' : isRepsOnly ? '1' : '0'}
-                value={hasDuration ? setRow.durationMinutes : isRepsOnly ? setRow.reps : setRow.weight}
-                onChange={e => updateSet(setRow.id, hasDuration ? 'durationMinutes' : isRepsOnly ? 'reps' : 'weight', e.target.value)}
+                type={hasDuration ? 'text' : 'number'}
+                inputMode={hasDuration ? 'numeric' : 'decimal'}
+                step={hasDuration ? undefined : isRepsOnly ? '1' : '0.5'}
+                min={hasDuration ? undefined : isRepsOnly ? '1' : '0'}
+                maxLength={hasDuration ? 5 : undefined}
+                value={hasDuration ? setRow.durationMMSS : isRepsOnly ? setRow.reps : setRow.weight}
+                onChange={e => updateSet(setRow.id, hasDuration ? 'durationMMSS' : isRepsOnly ? 'reps' : 'weight', e.target.value)}
                 disabled={setRow.completed}
-                placeholder="0"
+                placeholder={hasDuration ? '00:00' : '0'}
                 className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
                   setRow.completed ? 'text-emerald-400' : 'text-white'
                 }`}
@@ -311,10 +317,10 @@ export default function SetLogger({
                   inputMode={hasDistance ? 'decimal' : 'numeric'}
                   step={hasDistance ? '0.01' : '1'}
                   min={hasDistance ? '0.01' : '1'}
-                  value={hasDistance ? setRow.distanceKm : setRow.reps}
-                  onChange={e => updateSet(setRow.id, hasDistance ? 'distanceKm' : 'reps', e.target.value)}
+                  value={hasDistance ? setRow.distanceMeters : setRow.reps}
+                  onChange={e => updateSet(setRow.id, hasDistance ? 'distanceMeters' : 'reps', e.target.value)}
                   disabled={setRow.completed}
-                  placeholder="0"
+                  placeholder={hasDistance ? '0.00' : '0'}
                   className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
                     setRow.completed ? 'text-emerald-400' : 'text-white'
                   }`}

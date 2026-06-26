@@ -88,7 +88,7 @@ export default async function LeaderboardPage() {
           <p className="text-xs font-semibold tracking-widest text-indigo-400 uppercase mb-1">Leaderboard</p>
           <h1 className="text-2xl font-extrabold tracking-tight text-white">Top 10 users per exercise</h1>
           <p className="text-sm text-white/40 mt-1">
-            Strength exercises rank by heaviest lift. Running, Treadmill, SkiErg, and Rowing rank by distance and time.
+            Strength exercises rank by heaviest lift. Endurance exercises rank by longest distance (meters) then fastest time (mm:ss).
           </p>
         </div>
 

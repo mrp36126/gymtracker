@@ -55,6 +55,7 @@ export interface WorkoutLog {
   sets: number;
   reps: number;
   durationSeconds?: number | null;
+  // Backward-compatible property name; values are stored in meters.
   distanceKm?: number | null;
   notes?: string;
   loggedAt: string;

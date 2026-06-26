@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDistanceKm, formatDuration, getLeaderboardMetricType } from '@/lib/leaderboard';
+import { parseMeters, parseTimeMMSS } from '@/lib/metrics-format';
 
 type ManagedUser = {
   id: string;
@@ -65,17 +66,6 @@ function toDateTimeLocal(value: string | Date) {
   const date = new Date(value);
   const offsetMs = date.getTimezoneOffset() * 60 * 1000;
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
-}
-
-function parseDuration(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  const parts = trimmed.split(':').map((part) => Number(part));
-  if (parts.length === 1) return Math.round(parts[0] * 60);
-  if (parts.length === 2 && parts.every(Number.isFinite)) {
-    return Math.round(parts[0] * 60 + parts[1]);
-  }
-  return Number.NaN;
 }
 
 function formatEntrySummary(entry: ManagedEntry) {
@@ -161,9 +151,21 @@ export default function LeaderboardManager({ initialEntries, users, exercises }:
     setError('');
 
     try {
-      const durationSeconds = parseDuration(form.duration);
-      if (Number.isNaN(durationSeconds)) {
-        throw new Error('Time must be entered as minutes or mm:ss');
+      const durationSeconds = form.duration ? parseTimeMMSS(form.duration) : null;
+      const distanceMeters = form.distanceKm ? parseMeters(form.distanceKm) : null;
+
+      if (form.duration && durationSeconds === null) {
+        throw new Error('Time must be entered as mm:ss (example: 12:45)');
+      }
+
+      if (form.distanceKm && distanceMeters === null) {
+        throw new Error('Distance must be a positive number in meters');
+      }
+
+      if (selectedMetricType === 'endurance') {
+        if (distanceMeters === null || durationSeconds === null) {
+          throw new Error('Distance (meters) and time (mm:ss) are required for endurance entries');
+        }
       }
 
       const payload = {
@@ -173,14 +175,14 @@ export default function LeaderboardManager({ initialEntries, users, exercises }:
         sets: Number(form.sets),
         ...(selectedMetricType === 'endurance'
           ? {
-              distanceKm: Number(form.distanceKm),
+              distanceKm: distanceMeters,
               durationSeconds,
             }
           : {
               reps: Number(form.reps),
               weight: Number(form.weight),
-              ...(form.distanceKm ? { distanceKm: Number(form.distanceKm) } : {}),
-              ...(durationSeconds ? { durationSeconds } : {}),
+              ...(distanceMeters !== null ? { distanceKm: distanceMeters } : {}),
+              ...(durationSeconds !== null ? { durationSeconds } : {}),
             }),
         notes: form.notes,
       };
@@ -243,6 +245,7 @@ export default function LeaderboardManager({ initialEntries, users, exercises }:
         <select
           value={form.userId}
           onChange={(event) => setForm((current) => ({ ...current, userId: event.target.value }))}
+          aria-label="Leaderboard user"
           className="min-w-0 rounded-xl border border-white/[0.08] bg-[#0A0A0F] px-3 py-2 text-sm text-white"
         >
           {users.map((user) => (
@@ -252,6 +255,7 @@ export default function LeaderboardManager({ initialEntries, users, exercises }:
         <select
           value={form.exerciseId}
           onChange={(event) => setForm((current) => ({ ...current, exerciseId: event.target.value }))}
+          aria-label="Leaderboard exercise"
           className="min-w-0 rounded-xl border border-white/[0.08] bg-[#0A0A0F] px-3 py-2 text-sm text-white"
         >
           {exercises.map((exercise) => (
@@ -262,6 +266,7 @@ export default function LeaderboardManager({ initialEntries, users, exercises }:
           type="datetime-local"
           value={form.loggedAt}
           onChange={(event) => setForm((current) => ({ ...current, loggedAt: event.target.value }))}
+          aria-label="Logged at"
           className="min-w-0 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white"
         />
         <input
@@ -274,16 +279,21 @@ export default function LeaderboardManager({ initialEntries, users, exercises }:
         {selectedMetricType === 'endurance' ? (
           <>
             <input
+              type="number"
               value={form.distanceKm}
               onChange={(event) => setForm((current) => ({ ...current, distanceKm: event.target.value }))}
-              placeholder="Distance km"
+              placeholder="Distance (m)"
               inputMode="decimal"
+              step="0.01"
+              min="0.01"
               className="min-w-0 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-white/25"
             />
             <input
               value={form.duration}
               onChange={(event) => setForm((current) => ({ ...current, duration: event.target.value }))}
-              placeholder="Time mm:ss"
+              placeholder="00:00"
+              inputMode="numeric"
+              maxLength={5}
               className="min-w-0 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-white/25"
             />
           </>
