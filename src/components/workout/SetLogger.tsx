@@ -270,7 +270,7 @@ export default function SetLogger({
             }`}>
               <input
                 type={hasDuration ? 'text' : 'number'}
-                inputMode={hasDuration ? 'numeric' : 'decimal'}
+                inputMode={hasDuration ? 'text' : 'decimal'}
                 step={hasDuration ? undefined : isRepsOnly ? '1' : '0.5'}
                 min={hasDuration ? undefined : isRepsOnly ? '1' : '0'}
                 maxLength={hasDuration ? 5 : undefined}

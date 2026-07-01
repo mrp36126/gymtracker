@@ -1,14 +1,30 @@
 const MMSS_PATTERN = /^(\d{2}):([0-5]\d)$/;
+const COMPACT_MMSS_PATTERN = /^(\d{3,4})$/;
 
 export function parseTimeMMSS(value: string): number | null {
   const trimmed = value.trim();
   const match = MMSS_PATTERN.exec(trimmed);
-  if (!match) return null;
+  if (match) {
+    const minutes = Number(match[1]);
+    const seconds = Number(match[2]);
+    if (!Number.isInteger(minutes) || !Number.isInteger(seconds)) return null;
+    if (minutes < 0 || minutes > 59) return null;
 
-  const minutes = Number(match[1]);
-  const seconds = Number(match[2]);
+    return minutes * 60 + seconds;
+  }
+
+  const compactMatch = COMPACT_MMSS_PATTERN.exec(trimmed);
+  if (!compactMatch) return null;
+
+  const rawDigits = compactMatch[1];
+  if (!rawDigits) return null;
+  const padded = rawDigits.padStart(4, '0');
+  const minutes = Number(padded.slice(0, 2));
+  const seconds = Number(padded.slice(2));
+
   if (!Number.isInteger(minutes) || !Number.isInteger(seconds)) return null;
   if (minutes < 0 || minutes > 59) return null;
+  if (seconds < 0 || seconds > 59) return null;
 
   return minutes * 60 + seconds;
 }
