@@ -2,7 +2,6 @@
 import { useRef, useState } from 'react';
 import type { WorkoutLog } from '@/types';
 import { formatMeters, formatTimeMMSS, parseMeters, parseTimeMMSS } from '@/lib/metrics-format';
-import { formatDurationFromDigits, sanitizeDistanceInput } from '@/lib/workout-input-format';
 import { getWorkoutLogMode } from '@/lib/workout-log-mode';
 
 interface SetRow {
@@ -69,19 +68,7 @@ export default function SetLogger({
     field: 'weight' | 'reps' | 'durationMMSS' | 'distanceMeters',
     value: string
   ) => {
-    setSets(prev => prev.map((s) => {
-      if (s.id !== id) return s;
-
-      if (field === 'durationMMSS') {
-        return { ...s, durationMMSS: formatDurationFromDigits(value) };
-      }
-
-      if (field === 'distanceMeters') {
-        return { ...s, distanceMeters: sanitizeDistanceInput(value) };
-      }
-
-      return { ...s, [field]: value };
-    }));
+    setSets(prev => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
   };
 
   const completeSet = async (setRow: SetRow) => {
@@ -90,6 +77,8 @@ export default function SetLogger({
     }
 
     const durationSeconds = hasDuration ? parseTimeMMSS(setRow.durationMMSS) : null;
+    const normalizedDistance = setRow.distanceMeters.trim();
+    const distanceHasSingleDecimal = /^\d*\.?\d*$/.test(normalizedDistance);
     const distanceMeters = hasDistance ? parseMeters(setRow.distanceMeters) : null;
 
     if (hasDuration && (durationSeconds === null || durationSeconds <= 0)) {
@@ -99,6 +88,11 @@ export default function SetLogger({
 
     if (hasDistance && distanceMeters === null) {
       setError('Enter distance in meters as a positive number');
+      return;
+    }
+
+    if (hasDistance && !distanceHasSingleDecimal) {
+      setError('Distance must use digits and only one decimal point');
       return;
     }
 
@@ -282,17 +276,6 @@ export default function SetLogger({
                 maxLength={hasDuration ? 5 : undefined}
                 value={hasDuration ? setRow.durationMMSS : isRepsOnly ? setRow.reps : setRow.weight}
                 onChange={e => updateSet(setRow.id, hasDuration ? 'durationMMSS' : isRepsOnly ? 'reps' : 'weight', e.target.value)}
-                onKeyDown={hasDuration ? (event) => {
-                  if (
-                    event.key === ':'
-                    || event.key === ';'
-                    || event.key === ' '
-                    || event.key === ','
-                    || event.key === '.'
-                  ) {
-                    event.preventDefault();
-                  }
-                } : undefined}
                 disabled={setRow.completed}
                 placeholder={hasDuration ? '00:00' : '0'}
                 className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
@@ -312,7 +295,7 @@ export default function SetLogger({
                   inputMode={hasDistance ? 'decimal' : 'numeric'}
                   step={hasDistance ? undefined : '1'}
                   min={hasDistance ? undefined : '1'}
-                  pattern={hasDistance ? '[0-9]*[.]?[0-9]*' : undefined}
+                  pattern={hasDistance ? '^\\d*\\.?\\d*$' : undefined}
                   value={hasDistance ? setRow.distanceMeters : setRow.reps}
                   onChange={e => updateSet(setRow.id, hasDistance ? 'distanceMeters' : 'reps', e.target.value)}
                   disabled={setRow.completed}
