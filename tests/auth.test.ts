@@ -70,4 +70,49 @@ describe('getAuthUser', () => {
       supabaseId: 'supabase-user-2',
     });
   });
+
+  it('creates a trainer-user account by default when no local row exists', async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'supabase-user-3',
+          email: 'new.user@example.com',
+          user_metadata: { name: 'New User' },
+        },
+      },
+      error: null,
+    });
+
+    prismaMock.user.findUnique.mockResolvedValueOnce(null);
+    prismaMock.user.findFirst.mockResolvedValueOnce(null);
+    prismaMock.user.create.mockResolvedValueOnce({
+      id: 'new-user-1',
+      email: 'new.user@example.com',
+      supabaseId: 'supabase-user-3',
+      isAdmin: false,
+      isTrainer: false,
+      isTrainerUser: true,
+    });
+
+    const user = await getAuthUser();
+
+    expect(prismaMock.user.create).toHaveBeenCalledWith({
+      data: {
+        supabaseId: 'supabase-user-3',
+        name: 'New User',
+        email: 'new.user@example.com',
+        isAdmin: false,
+        isTrainer: false,
+        isTrainerUser: true,
+      },
+    });
+    expect(user).toEqual({
+      id: 'new-user-1',
+      email: 'new.user@example.com',
+      supabaseId: 'supabase-user-3',
+      isAdmin: false,
+      isTrainer: false,
+      isTrainerUser: true,
+    });
+  });
 });

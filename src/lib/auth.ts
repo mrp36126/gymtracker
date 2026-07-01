@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from './supabase';
 import { prisma } from './prisma';
 import { NextResponse } from 'next/server';
+import { resolveUserRoleFlags } from './user-roles';
 
 export async function getAuthUser() {
   try {
@@ -44,6 +45,7 @@ export async function getAuthUser() {
           supabaseId: user.id,
           name,
           email: authEmail ?? `${user.id}@unknown`,
+          ...resolveUserRoleFlags(),
         },
       });
     } else if (authEmail && dbUser.email !== authEmail) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase';
 import { prisma } from '@/lib/prisma';
+import { resolveUserRoleFlags } from '@/lib/user-roles';
 
 const RegisterSchema = z.object({
   name:     z.string().min(2).max(50),
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
         supabaseId: data.user.id,
         name:       body.name,
         email:      body.email,
+        ...resolveUserRoleFlags(),
       },
     });
 

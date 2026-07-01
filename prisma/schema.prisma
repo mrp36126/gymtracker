@@ -14,7 +14,7 @@ model User {
   email          String       @unique
   isAdmin        Boolean      @default(false)
   isTrainer      Boolean      @default(false)
-  isTrainerUser  Boolean      @default(false)
+  isTrainerUser  Boolean      @default(true)
   trainerId      String?
   trainer        User?        @relation("TrainerUsers", fields: [trainerId], references: [id], onDelete: SetNull)
   trainerUsers   User[]       @relation("TrainerUsers")
