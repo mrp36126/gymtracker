@@ -5,6 +5,7 @@ import SetLogger from './SetLogger';
 import ExerciseInstructionModal from './ExerciseInstructionModal';
 import { useWorkoutTimer } from '@/components/timer/WorkoutTimerProvider';
 import { formatMeters, formatTimeMMSS } from '@/lib/metrics-format';
+import { getWorkoutLogMode } from '@/lib/workout-log-mode';
 
 interface Props {
   exercise: Exercise;
@@ -36,28 +37,22 @@ function DetailImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-function normalize(value: string) {
-  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
 function getExerciseTargetLabel(muscleGroup: string, exerciseName: string, defaultReps: string) {
-  const normalized = normalize(muscleGroup);
-  const normalizedName = normalize(exerciseName);
+  const mode = getWorkoutLogMode(muscleGroup, exerciseName);
 
-  if (normalizedName === 'plank' || normalizedName === 'planks') {
+  if (mode === 'timeOnly') {
     return 'time target';
   }
 
-  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)
-    || ['running', 'rowing', 'cycling', 'skierg'].includes(normalizedName)) {
+  if (mode === 'timeDistance') {
     return 'time (mm:ss) and distance (m) target';
   }
 
-  if (['sledpush', 'sledpull', 'farmers'].includes(normalized)) {
+  if (mode === 'weightDistance') {
     return 'weight and distance (m) target';
   }
 
-  if (normalized === 'burpee') {
+  if (mode === 'repsOnly') {
     return 'reps target';
   }
 

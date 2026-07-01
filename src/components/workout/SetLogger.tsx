@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import type { WorkoutLog } from '@/types';
 import { formatMeters, formatTimeMMSS, parseMeters, parseTimeMMSS } from '@/lib/metrics-format';
 import { formatDurationFromDigits, sanitizeDistanceInput } from '@/lib/workout-input-format';
+import { getWorkoutLogMode } from '@/lib/workout-log-mode';
 
 interface SetRow {
   id: string;
@@ -26,36 +27,6 @@ interface Props {
   targetUserId?: string;
 }
 
-type LogMode = 'timeDistance' | 'timeOnly' | 'weightDistance' | 'repsOnly' | 'strength';
-
-function normalize(value: string) {
-  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function getLogMode(muscleGroup: string, exerciseName: string): LogMode {
-  const normalized = normalize(muscleGroup);
-  const normalizedName = normalize(exerciseName);
-
-  if (normalizedName === 'plank' || normalizedName === 'planks') {
-    return 'timeOnly';
-  }
-
-  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)
-    || ['running', 'rowing', 'cycling', 'skierg'].includes(normalizedName)) {
-    return 'timeDistance';
-  }
-
-  if (['sledpush', 'sledpull', 'farmers'].includes(normalized)) {
-    return 'weightDistance';
-  }
-
-  if (normalized === 'burpee') {
-    return 'repsOnly';
-  }
-
-  return 'strength';
-}
-
 export default function SetLogger({
   exerciseId,
   exerciseName,
@@ -67,7 +38,7 @@ export default function SetLogger({
   targetUserId,
 }: Props) {
   const parseDefaultReps = (reps: string) => reps.includes('-') ? reps.split('-')[0] : reps;
-  const logMode = getLogMode(muscleGroup, exerciseName);
+  const logMode = getWorkoutLogMode(muscleGroup, exerciseName);
   const isTimeDistance = logMode === 'timeDistance';
   const isTimeOnly = logMode === 'timeOnly';
   const isWeightDistance = logMode === 'weightDistance';

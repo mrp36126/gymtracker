@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { findActivePrimaryProgramForUser, findExerciseForUser } from '@/lib/program-scope';
 import { resolveManagedTargetUser } from '@/lib/trainer-context';
 import { getStartOfTodayInSAST } from '@/lib/timezone';
+import { getWorkoutLogMode } from '@/lib/workout-log-mode';
 import { z } from 'zod';
 
 const SetSchema = z.object({
@@ -18,34 +19,6 @@ const SetSchema = z.object({
 });
 
 type LogMode = 'timeDistance' | 'timeOnly' | 'weightDistance' | 'repsOnly' | 'strength';
-
-function normalize(value: string) {
-  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function getLogMode(muscleGroup: string, exerciseName: string): LogMode {
-  const normalized = normalize(muscleGroup);
-  const normalizedName = normalize(exerciseName);
-
-  if (normalizedName === 'plank' || normalizedName === 'planks') {
-    return 'timeOnly';
-  }
-
-  if (['running', 'rowing', 'cycling', 'skierg'].includes(normalized)
-    || ['running', 'rowing', 'cycling', 'skierg'].includes(normalizedName)) {
-    return 'timeDistance';
-  }
-
-  if (['sledpush', 'sledpull', 'farmers'].includes(normalized)) {
-    return 'weightDistance';
-  }
-
-  if (normalized === 'burpee') {
-    return 'repsOnly';
-  }
-
-  return 'strength';
-}
 
 export async function POST(req: NextRequest) {
   const { user, response } = await requireAuth();
@@ -118,7 +91,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Exercise not found. Please reload this workout session.' }, { status: 404 });
   }
 
-  const logMode = getLogMode(exercise.muscleGroup, exercise.name);
+  const logMode: LogMode = getWorkoutLogMode(exercise.muscleGroup, exercise.name);
 
   if (logMode === 'timeDistance' && (!body.durationSeconds || !body.distanceKm)) {
     return NextResponse.json({ error: 'Enter time (mm:ss) and distance (meters) first' }, { status: 422 });

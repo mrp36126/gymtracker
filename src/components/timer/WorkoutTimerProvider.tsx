@@ -159,7 +159,7 @@ function FloatingWorkoutTimer() {
   if (!exercise) return null;
 
   return (
-    <aside className="fixed bottom-3 left-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-white/10 bg-[#111119]/95 px-3 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl sm:bottom-4 sm:right-4 sm:left-auto sm:w-auto sm:min-w-72 sm:translate-x-0">
+    <aside className="fixed left-1/2 top-3 z-50 w-[calc(100vw-1.5rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-white/10 bg-[#111119]/95 px-3 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl sm:left-auto sm:right-4 sm:top-4 sm:w-auto sm:min-w-72 sm:translate-x-0">
       <div className="flex items-center gap-2">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300">
           <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" aria-hidden="true">
