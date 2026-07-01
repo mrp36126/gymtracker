@@ -151,15 +151,12 @@ export function useWorkoutTimer() {
 
 function FloatingWorkoutTimer() {
   const {
-    workout,
     exercise,
-    workoutElapsed,
     exerciseElapsed,
-    stopWorkout,
     stopExercise,
   } = useWorkoutTimer();
 
-  if (!workout && !exercise) return null;
+  if (!exercise) return null;
 
   return (
     <aside className="fixed bottom-3 left-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-white/10 bg-[#111119]/95 px-3 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl sm:bottom-4 sm:right-4 sm:left-auto sm:w-auto sm:min-w-72 sm:translate-x-0">
@@ -171,14 +168,6 @@ function FloatingWorkoutTimer() {
         </div>
 
         <div className="grid min-w-0 flex-1 gap-1">
-          {workout && (
-            <TimerLine
-              label={workout.label}
-              value={formatElapsed(workoutElapsed)}
-              onStop={stopWorkout}
-              stopLabel="Stop workout timer"
-            />
-          )}
           {exercise && (
             <TimerLine
               label={exercise.label}

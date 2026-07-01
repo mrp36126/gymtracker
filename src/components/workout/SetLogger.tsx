@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import type { WorkoutLog } from '@/types';
 import { formatMeters, formatTimeMMSS, parseMeters, parseTimeMMSS } from '@/lib/metrics-format';
+import { formatDurationFromDigits, sanitizeDistanceInput } from '@/lib/workout-input-format';
 
 interface SetRow {
   id: string;
@@ -97,7 +98,19 @@ export default function SetLogger({
     field: 'weight' | 'reps' | 'durationMMSS' | 'distanceMeters',
     value: string
   ) => {
-    setSets(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+    setSets(prev => prev.map((s) => {
+      if (s.id !== id) return s;
+
+      if (field === 'durationMMSS') {
+        return { ...s, durationMMSS: formatDurationFromDigits(value) };
+      }
+
+      if (field === 'distanceMeters') {
+        return { ...s, distanceMeters: sanitizeDistanceInput(value) };
+      }
+
+      return { ...s, [field]: value };
+    }));
   };
 
   const completeSet = async (setRow: SetRow) => {
@@ -108,7 +121,7 @@ export default function SetLogger({
     const durationSeconds = hasDuration ? parseTimeMMSS(setRow.durationMMSS) : null;
     const distanceMeters = hasDistance ? parseMeters(setRow.distanceMeters) : null;
 
-    if (hasDuration && durationSeconds === null) {
+    if (hasDuration && (durationSeconds === null || durationSeconds <= 0)) {
       setError('Enter time as mm:ss (example: 12:45)');
       return;
     }
@@ -298,6 +311,17 @@ export default function SetLogger({
                 maxLength={hasDuration ? 5 : undefined}
                 value={hasDuration ? setRow.durationMMSS : isRepsOnly ? setRow.reps : setRow.weight}
                 onChange={e => updateSet(setRow.id, hasDuration ? 'durationMMSS' : isRepsOnly ? 'reps' : 'weight', e.target.value)}
+                onKeyDown={hasDuration ? (event) => {
+                  if (
+                    event.key === ':'
+                    || event.key === ';'
+                    || event.key === ' '
+                    || event.key === ','
+                    || event.key === '.'
+                  ) {
+                    event.preventDefault();
+                  }
+                } : undefined}
                 disabled={setRow.completed}
                 placeholder={hasDuration ? '00:00' : '0'}
                 className={`w-full bg-transparent text-sm font-bold text-center focus:outline-none placeholder:text-white/15 min-w-0 ${
@@ -313,10 +337,11 @@ export default function SetLogger({
                   : 'bg-white/[0.06] border-white/[0.08]'
               }`}>
                 <input
-                  type="number"
+                  type={hasDistance ? 'text' : 'number'}
                   inputMode={hasDistance ? 'decimal' : 'numeric'}
-                  step={hasDistance ? '0.01' : '1'}
-                  min={hasDistance ? '0.01' : '1'}
+                  step={hasDistance ? undefined : '1'}
+                  min={hasDistance ? undefined : '1'}
+                  pattern={hasDistance ? '[0-9]*[.]?[0-9]*' : undefined}
                   value={hasDistance ? setRow.distanceMeters : setRow.reps}
                   onChange={e => updateSet(setRow.id, hasDistance ? 'distanceMeters' : 'reps', e.target.value)}
                   disabled={setRow.completed}
