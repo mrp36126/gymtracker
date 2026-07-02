@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import type { WorkoutLog } from '@/types';
 import { formatMeters, formatTimeMMSS, parseMeters, parseTimeMMSS } from '@/lib/metrics-format';
 import { getWorkoutLogMode } from '@/lib/workout-log-mode';
+import { usePreviousWorkoutReference } from './usePreviousWorkoutReference';
 
 interface SetRow {
   id: string;
@@ -21,7 +22,6 @@ interface Props {
   muscleGroup: string;
   defaultSets: number;
   defaultReps: string;
-  lastLog: WorkoutLog | null;
   onSetComplete: (log: WorkoutLog) => void;
   targetUserId?: string;
 }
@@ -32,7 +32,6 @@ export default function SetLogger({
   muscleGroup,
   defaultSets,
   defaultReps,
-  lastLog,
   onSetComplete,
   targetUserId,
 }: Props) {
@@ -46,12 +45,25 @@ export default function SetLogger({
   const hasDuration = isTimeDistance || isTimeOnly;
   const hasWeight = logMode === 'strength' || isWeightDistance;
   const hasReps = logMode === 'strength' || isRepsOnly;
+  const {
+    previousReference,
+    previousReferenceLoading,
+    previousReferenceError,
+  } = usePreviousWorkoutReference({
+    exerciseId,
+    exerciseName,
+    targetUserId,
+  });
+
+  const previousSetByNumber = new Map(
+    (previousReference?.sets ?? []).map((setReference) => [setReference.setNumber, setReference])
+  );
 
   const initSets = (): SetRow[] =>
     Array.from({ length: defaultSets }, (_, i) => ({
       id: String(i),
       setNumber: i + 1,
-      weight: lastLog && hasWeight ? String(lastLog.weight) : '',
+      weight: '',
       reps: parseDefaultReps(defaultReps),
       durationMMSS: '',
       distanceMeters: '',
@@ -237,29 +249,80 @@ export default function SetLogger({
 
             {/* Previous */}
             <div className="text-center">
-              {lastLog && isTimeDistance && lastLog.durationSeconds && lastLog.distanceKm !== null && lastLog.distanceKm !== undefined ? (
-                <span className="text-[11px] text-white/25">
-                  {formatTimeMMSS(lastLog.durationSeconds)} / {formatMeters(lastLog.distanceKm)}
-                </span>
-              ) : lastLog && isTimeOnly && lastLog.durationSeconds ? (
-                <span className="text-[11px] text-white/25">
-                  {formatTimeMMSS(lastLog.durationSeconds)}
-                </span>
-              ) : lastLog && isWeightDistance && lastLog.distanceKm !== null && lastLog.distanceKm !== undefined ? (
-                <span className="text-[11px] text-white/25">
-                  {lastLog.weight}kg / {formatMeters(lastLog.distanceKm)}
-                </span>
-              ) : lastLog && isRepsOnly ? (
-                <span className="text-[11px] text-white/25">
-                  {lastLog.reps} reps
-                </span>
-              ) : lastLog && logMode === 'strength' ? (
-                <span className="text-[11px] text-white/25">
-                  {lastLog.weight}kg x {lastLog.reps}
-                </span>
-              ) : (
+              {previousReferenceLoading ? (
+                <span className="text-[11px] text-white/20">Loading...</span>
+              ) : previousReferenceError ? (
                 <span className="text-[11px] text-white/15">-</span>
-              )}
+              ) : !previousReference || previousReference.sets.length === 0 ? (
+                setRow.setNumber === 1
+                  ? <span className="text-[11px] text-white/20">No previous workout found.</span>
+                  : <span className="text-[11px] text-white/15">-</span>
+              ) : (() => {
+                const previousSet = previousSetByNumber.get(setRow.setNumber);
+
+                if (!previousSet) {
+                  return <span className="text-[11px] text-white/15">-</span>;
+                }
+
+                if (
+                  isTimeDistance
+                  && previousSet.durationSeconds
+                  && previousSet.distanceKm !== null
+                  && previousSet.distanceKm !== undefined
+                ) {
+                  return (
+                    <span className="text-[11px] text-white/25">
+                      {formatTimeMMSS(previousSet.durationSeconds)} / {formatMeters(previousSet.distanceKm)}
+                    </span>
+                  );
+                }
+
+                if (isTimeOnly && previousSet.durationSeconds) {
+                  return (
+                    <span className="text-[11px] text-white/25">
+                      {formatTimeMMSS(previousSet.durationSeconds)}
+                    </span>
+                  );
+                }
+
+                if (
+                  isWeightDistance
+                  && previousSet.distanceKm !== null
+                  && previousSet.distanceKm !== undefined
+                  && previousSet.weight !== null
+                  && previousSet.weight !== undefined
+                ) {
+                  return (
+                    <span className="text-[11px] text-white/25">
+                      {previousSet.weight}kg / {formatMeters(previousSet.distanceKm)}
+                    </span>
+                  );
+                }
+
+                if (isRepsOnly && previousSet.reps !== null && previousSet.reps !== undefined) {
+                  return (
+                    <span className="text-[11px] text-white/25">
+                      {previousSet.reps} reps
+                    </span>
+                  );
+                }
+
+                if (
+                  logMode === 'strength'
+                  && previousSet.weight !== null
+                  && previousSet.weight !== undefined
+                  && previousSet.reps !== null
+                  && previousSet.reps !== undefined
+                ) {
+                  return (
+                    <span className="text-[11px] text-white/25">
+                      {previousSet.weight}kg x {previousSet.reps}
+                    </span>
+                  );
+                }
+
+                return <span className="text-[11px] text-white/15">-</span>;
+              })()}
             </div>
 
             {/* Primary input */}

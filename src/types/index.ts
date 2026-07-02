@@ -62,6 +62,24 @@ export interface WorkoutLog {
   exerciseId: string;
 }
 
+export interface PreviousWorkoutSetReference {
+  setNumber: number;
+  weight?: number | null;
+  reps?: number | null;
+  durationSeconds?: number | null;
+  // Backward-compatible property name; values are stored in meters.
+  distanceKm?: number | null;
+  rpe?: number | null;
+  restSeconds?: number | null;
+  notes?: string | null;
+  loggedAt?: string;
+}
+
+export interface PreviousWorkoutReference {
+  workoutDate: string;
+  sets: PreviousWorkoutSetReference[];
+}
+
 export interface ProgressPoint {
   date: string;
   volume: number;  // weight * sets * reps

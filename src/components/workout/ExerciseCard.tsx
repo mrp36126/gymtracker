@@ -257,7 +257,6 @@ export default function ExerciseCard({ exercise, readOnly = false, targetUserId,
             muscleGroup={exercise.muscleGroup}
             defaultSets={exercise.defaultSets}
             defaultReps={exercise.defaultReps}
-            lastLog={lastLog}
             onSetComplete={handleSetComplete}
             targetUserId={targetUserId}
           />
