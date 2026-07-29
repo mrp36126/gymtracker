@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -58,7 +58,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.08] transition"
             />
           </div>
@@ -82,10 +82,11 @@ export default function LoginPage() {
             Forgot password?
           </Link>
           <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold transition">
-            Create account
+            Create one
           </Link>
         </div>
       </div>
     </main>
   );
 }
+

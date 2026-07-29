@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -19,15 +19,13 @@ export default function ForgotPasswordPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-
       const json = await res.json();
       if (!res.ok) {
         throw new Error(json.error ?? 'Unable to send reset instructions.');
       }
-
-      setStatus(json.message ?? 'If an account exists for this email, a reset link has been sent.');
-    } catch (e: any) {
-      setError(e.message);
+      setStatus(json.message || 'If an account exists for that email, a reset link has been sent.');
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -42,7 +40,7 @@ export default function ForgotPasswordPage() {
             <span className="font-bold text-white tracking-tight">GymTracker Pro</span>
           </div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Forgot password?</h1>
-          <p className="text-white/40 text-sm mt-2">Enter your email and we&apos;ll send reset instructions.</p>
+          <p className="text-white/40 text-sm mt-2">Enter your email and we will send reset instructions.</p>
         </div>
 
         <div className="space-y-3 mb-4">
@@ -71,6 +69,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={loading}
           className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl py-3.5 font-bold text-sm tracking-wide transition disabled:opacity-50 mb-6"

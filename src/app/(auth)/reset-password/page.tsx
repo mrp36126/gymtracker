@@ -1,49 +1,57 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [hasRecoveryParams, setHasRecoveryParams] = useState(false);
+  const [checkingRecovery, setCheckingRecovery] = useState(true);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-
-    const hash = window.location.hash;
-    const search = window.location.search;
-    const hasRecovery = hash.includes('type=recovery')
-      || search.includes('type=recovery')
-      || hash.includes('access_token')
-      || search.includes('code=')
-      || hash.includes('code=');
-
-    if (!hasRecovery) {
-      setError('This reset link is invalid or expired. Please request a new one.');
+    if (typeof window === 'undefined') {
+      setCheckingRecovery(false);
       return;
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        setReady(true);
-      }
-    });
+    const currentUrl = new URL(window.location.href);
+    const searchParams = currentUrl.searchParams;
+    const hasSearchRecovery = searchParams.get('type') === 'recovery'
+      || Boolean(searchParams.get('access_token'))
+      || Boolean(searchParams.get('refresh_token'));
+    const hash = window.location.hash;
+    const hasHashRecovery = hash.includes('type=recovery')
+      || hash.includes('access_token=')
+      || hash.includes('refresh_token=');
 
-    return () => subscription.unsubscribe();
+    const recoveryPresent = hasSearchRecovery || hasHashRecovery;
+    setHasRecoveryParams(recoveryPresent);
+
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getSession()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Supabase session check failed:', error);
+          return;
+        }
+
+        if (!data.session && !recoveryPresent) {
+          setError('This reset link appears invalid or expired. Please request a new password reset email.');
+        }
+      })
+      .finally(() => setCheckingRecovery(false));
   }, []);
 
   const handleReset = async () => {
     setError('');
     setStatus('');
 
-    if (!password || password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    if (!password || password.length < 8) {
+      setError('Password must be at least 8 characters long.');
       return;
     }
 
@@ -53,7 +61,6 @@ export default function ResetPasswordPage() {
     }
 
     setLoading(true);
-
     try {
       const supabase = createSupabaseBrowserClient();
       const { error } = await supabase.auth.updateUser({ password });
@@ -62,12 +69,11 @@ export default function ResetPasswordPage() {
         throw new Error(error.message);
       }
 
-      setStatus('Your password has been updated. You can sign in with your new password now.');
+      setStatus('Your password has been updated. Please sign in with your new password.');
       setPassword('');
       setConfirmPassword('');
-      setTimeout(() => router.push('/login'), 2000);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (err: any) {
+      setError(err.message || 'Unable to update password.');
     } finally {
       setLoading(false);
     }
@@ -82,12 +88,18 @@ export default function ResetPasswordPage() {
             <span className="font-bold text-white tracking-tight">GymTracker Pro</span>
           </div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Reset password</h1>
-          <p className="text-white/40 text-sm mt-2">Choose a new password for your account.</p>
+          <p className="text-white/40 text-sm mt-2">Choose a new password to complete reset.</p>
         </div>
 
-        {!ready && (
-          <div className="bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-3 mb-4 text-sm text-white/70">
-            <p>Opening your secure reset session…</p>
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+
+        {status && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 mb-4">
+            <p className="text-emerald-400 text-sm">{status}</p>
           </div>
         )}
 
@@ -114,24 +126,13 @@ export default function ResetPasswordPage() {
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
-        )}
-
-        {status && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 mb-4">
-            <p className="text-emerald-400 text-sm">{status}</p>
-          </div>
-        )}
-
         <button
+          type="button"
           onClick={handleReset}
-          disabled={loading || !ready}
+          disabled={loading}
           className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl py-3.5 font-bold text-sm tracking-wide transition disabled:opacity-50 mb-6"
         >
-          {loading ? 'Updating password...' : 'Update password'}
+          {loading ? 'Resetting...' : 'Reset password'}
         </button>
 
         <p className="text-center text-sm text-white/30">
