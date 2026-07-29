@@ -1,12 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,7 +17,8 @@ export default function ResetPasswordPage() {
     const supabase = createSupabaseBrowserClient();
 
     const hash = window.location.hash;
-    const hasRecovery = hash.includes('type=recovery') || searchParams.get('type') === 'recovery';
+    const search = window.location.search;
+    const hasRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
 
     if (!hasRecovery) {
       setError('This reset link is invalid or expired. Please request a new one.');
@@ -32,7 +32,7 @@ export default function ResetPasswordPage() {
     });
 
     return () => subscription.unsubscribe();
-  }, [searchParams]);
+  }, []);
 
   const handleReset = async () => {
     setError('');
