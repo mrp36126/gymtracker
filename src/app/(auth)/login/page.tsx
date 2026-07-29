@@ -77,12 +77,14 @@ export default function LoginPage() {
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
 
-        <p className="text-center text-sm text-white/30">
-          No account?{' '}
-          <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold transition">
-            Create one
+        <div className="flex items-center justify-between text-sm mb-6">
+          <Link href="/forgot-password" className="text-indigo-400 hover:text-indigo-300 font-semibold transition">
+            Forgot password?
           </Link>
-        </p>
+          <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold transition">
+            Create account
+          </Link>
+        </div>
       </div>
     </main>
   );
