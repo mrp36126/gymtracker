@@ -18,7 +18,11 @@ export default function ResetPasswordPage() {
 
     const hash = window.location.hash;
     const search = window.location.search;
-    const hasRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
+    const hasRecovery = hash.includes('type=recovery')
+      || search.includes('type=recovery')
+      || hash.includes('access_token')
+      || search.includes('code=')
+      || hash.includes('code=');
 
     if (!hasRecovery) {
       setError('This reset link is invalid or expired. Please request a new one.');

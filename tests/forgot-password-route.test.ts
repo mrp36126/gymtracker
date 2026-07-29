@@ -33,6 +33,26 @@ describe('POST /api/auth/forgot-password', () => {
     expect(json.message).toContain('password reset link');
   });
 
+  it('uses the configured site URL for the recovery redirect', async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://gymtracker.example.com';
+    resetPasswordForEmailMock.mockResolvedValueOnce({ error: null });
+
+    const req = new Request('http://localhost/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com' }),
+    }) as any;
+
+    await POST(req);
+
+    expect(resetPasswordForEmailMock).toHaveBeenCalledWith(
+      'user@example.com',
+      expect.objectContaining({
+        redirectTo: 'https://gymtracker.example.com/reset-password?type=recovery',
+      })
+    );
+  });
+
   it('rejects invalid email payloads', async () => {
     const req = new Request('http://localhost/api/auth/forgot-password', {
       method: 'POST',

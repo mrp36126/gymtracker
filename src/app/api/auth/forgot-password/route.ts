@@ -6,12 +6,34 @@ const ForgotPasswordSchema = z.object({
   email: z.string().email(),
 });
 
+function getAppBaseUrl(req: NextRequest) {
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/$/, '');
+  }
+
+  const forwardedProto = req.headers.get('x-forwarded-proto') ?? 'http';
+  const forwardedHost = req.headers.get('x-forwarded-host');
+  const host = req.headers.get('host');
+
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  if (host) {
+    return `${forwardedProto}://${host}`;
+  }
+
+  return 'http://localhost:3000';
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = ForgotPasswordSchema.parse(await req.json());
 
     const supabase = await createSupabaseServerClient();
-    const redirectTo = new URL('/reset-password', req.url).toString();
+    const baseUrl = getAppBaseUrl(req);
+    const redirectTo = new URL('/reset-password?type=recovery', `${baseUrl}/`).toString();
 
     const { error } = await supabase.auth.resetPasswordForEmail(body.email, { redirectTo });
 
